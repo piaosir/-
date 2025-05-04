@@ -1,0 +1,2975 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>卫星链路计算系统</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 15px;
+            background-color: #f8f9fa;
+            color: #333;
+            font-size: 13px;
+        }
+        
+        .container {
+    max-width: 1400px;
+    margin: 0 auto;
+    background-color: white;
+    padding: 15px;
+    border-radius: 5px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+    position: relative;
+        }
+.title-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+    .logo {
+    height: 40px;       /* 略小于标题字号 */
+    width: auto;
+    margin: 0;          /* 移除默认外边距 */
+    opacity: 0.9;
+    vertical-align: bottom;
+    }
+        h1 {
+    margin: 0;          /* 移除原有下边距 */
+    font-size: 20px;
+    line-height: 1.2;
+    display: inline-block;
+    vertical-align: bottom;
+font-family: '微软雅黑';
+font-weight: 600;
+        }
+        
+.satellite-params {
+    background-color: #ffffff;
+    padding: 20px;
+    border-radius: 6px;
+    margin-bottom: 10px;
+    border: 1px solid #e0e0e0;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+
+.satellite-params h2 {
+    margin: 0 0 18px 0;
+    font-size: 18px;
+    font-weight: 550;
+    color: #2c3e50;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #f0f2f5;
+    letter-spacing: 0.5px;
+}
+
+.param-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); /* 从280px减小到250px */
+    gap: 12px; /* 从16px减小到12px */
+}
+
+.param-item {
+    display: flex;
+    align-items: center;
+    gap: 13px;
+    padding: 8px 0;
+    border-bottom: 1px solid #f5f5f5;
+ width: 90%;
+}
+
+.param-item label {
+    flex: 0 0 140px;
+    font-size: 16px;
+    color: #5a6c7d;
+    font-weight: 500;
+    padding-right: 0px;
+    position: relative;
+font-family: '微软雅黑';
+}
+
+.param-item label::after {
+    content: ":";
+    position: absolute;
+    right: 0px;
+    color: #c0c8d1;
+
+}
+
+.param-item input,
+.param-item select {
+    flex: 1;
+    padding: 7px 9px; /* 从7px 10px减小到6px 8px */
+    border: 1px solid #dde3e8;
+    border-radius: 4px;
+    font-size: 15px; /* 从12px减小到11px */
+    color: #4a5b6c;
+    background: #f9fafb;
+    transition: all 0.2s ease;
+   font-family: '微软雅黑';
+}
+
+.param-item select {
+    appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23909dac'%3e%3cpath d='M7 10l5 5 5-5z'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 5px center;
+    background-size: 14px;
+}
+
+.param-item input:focus,
+.param-item select:focus {
+    border-color: #4285f4;
+    box-shadow: 0 0 0 2px rgba(66,133,244,0.1);
+    background: #ffffff;
+    outline: none;
+
+}
+
+/* 必填项标识 */
+.param-item[required] label::before {
+    content: "*";
+    color: #e74c3c;
+    position: absolute;
+    left: -10px;
+    top: 1px;
+    font-size: 14px;
+}
+        
+ .button-container {
+        display: flex !important;
+        justify-content: flex-end;
+        margin-top: 15px;
+        margin-bottom: 15px;
+        }
+   #calculateBtn {
+    position: fixed;
+    top: 20px;
+    right: 40px;
+    z-index: 9999;
+    padding: 12px 24px;
+    font-size: 18px;
+    box-shadow: 0 3px 12px rgba(0,0,0,0.15);
+    transition: all 0.2s;
+
+}
+
+#calculateBtn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+}     
+       
+        .controls {
+            margin: 0; /* 移除原有margin */
+            width: 100%;
+        }
+        
+        button {
+            padding: 6px 12px;
+            background-color: #4285f4;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 500;
+            transition: background-color 0.2s;
+        }
+        
+        button:hover {
+            background-color: #3367d6;
+        }
+        
+        table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 15px;
+    font-size: 13px; /* 从12px减小到11px */
+
+        }
+    /* 修改表格中输入框的字体大小和样式 */
+    #mainTable input[type="text"],
+    #mainTable input[type="number"],
+    #mainTable select {
+        width: 90%;
+        padding: 5px 8px;
+        border: 1px solid #ced4da;
+        border-radius: 3px;
+        font-size: 14px;
+        font-weight: 500;
+        color: #333;
+        background-color: #fff;
+        box-sizing: border-box; /* 新增：确保padding和border包含在宽度内 */
+        height: 28px; /* 新增：固定高度 */
+        line-height: 1.2; /* 新增：调整行高 */
+        margin: 0 auto; /* 新增：居中显示 */
+        display: block; /* 新增：块级元素 */
+       font-family: '宋体';
+    }
+
+    /* 聚焦状态样式 */
+    #mainTable input[type="text"]:focus,
+    #mainTable input[type="number"]:focus,
+    #mainTable select:focus {
+        outline: none;
+        border-color: #4285f4;
+        box-shadow: 0 0 0 2px rgba(66, 133, 244, 0.2);
+    }
+
+    /* 下拉选择框样式 */
+    #mainTable select {
+        appearance: none;
+        background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23909dac'%3e%3cpath d='M7 10l5 5 5-5z'/%3e%3c/svg%3e");
+        background-repeat: no-repeat;
+        background-position: right 5px center;
+        background-size: 14px;
+    }
+
+    /* 城市选择器特殊样式 */
+    .city-selector {
+        font-size: 13px;
+        font-weight: 500;
+        height: 28px; /* 与普通输入框保持一致 */
+    }
+
+    /* 表格单元格样式调整 */
+    #mainTable td {
+        padding: 8px 10px;
+        vertical-align: middle; /* 新增：垂直居中 */
+    }
+
+    /* 确保所有输入框容器一致 */
+    #mainTable td > * {
+        vertical-align: middle;
+    }
+        th, td {
+    border: 1px solid #dee2e6;
+    padding: 6px 8px; /* 从6px 8px减小到4px 6px */
+    text-align: left;
+    line-height: 1.2; /* 从1.3减小到1.2 */
+   font-weight: 400;
+font-family: '微软雅黑';
+        }
+        
+        th {
+            background-color: #f1f3f5;
+            position: sticky;
+            top: 0;
+            font-weight: 500;
+            color: #495057;
+           font-size: 14px;
+           text-align: center;
+           font-family: '微软雅黑';
+        }
+        
+        tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+        
+        tr:hover {
+            background-color: #e9ecef;
+        }
+        
+        .input-area {
+            background-color: #e7f5ff;
+        }
+        
+        .result-area {
+            background-color: #fff3bf;
+        }
+        
+        .draggable {
+            cursor: move;
+        }
+        
+        .dragging {
+            opacity: 0.7;
+            background-color: #d0ebff !important;
+        }
+        
+        input[type="text"], input[type="number"], select {
+            width: 90%;
+            padding: 4px 6px;
+            border: 1px solid #ced4da;
+            border-radius: 3px;
+            font-size: 15px;
+        }
+        
+        input[type="text"]:focus, input[type="number"]:focus, select:focus {
+            outline: none;
+            border-color: #4285f4;
+            box-shadow: 0 0 0 2px rgba(66, 133, 244, 0.2);
+        }
+        
+        .param-item section {
+            font-size: 1.2em;
+            color: var(--primary);
+            border-left: 0px solid var(--accent);
+            padding-left: 0rem;
+            margin: 0rem 0 1rem;
+            font-weight: 600;
+        }
+        
+        .file-upload-section {
+    display: flex;
+    align-items: center;
+        }
+        
+        /* 打印按钮样式 */
+        .print-btn {
+            padding: 4px 12px;
+            background-color: #2C3E50;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 13px;
+            margin-right: 8px;
+        }
+        
+        /* 文件上传状态 */
+        #fileStatus {
+            color: #666;
+            text-align: center;
+            font-size: 0.8em;
+            margin-top: 5px;
+        }
+.file-upload-module {
+    flex: 1;
+    position: relative;
+    border: 1px dashed #d1d5db;
+    border-radius: 6px;
+    padding: 8px;
+    background: #f8fafc;
+    transition: border-color 0.2s;
+    min-width: 200px;
+margin: 0px;
+}
+
+.custom-file-input {
+    width: 100%;
+    opacity: 0;
+    position: absolute;
+    left: 0;
+    top: 0;
+    height: calc(100% - 8px);
+    cursor: pointer;
+}
+
+.file-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    pointer-events: none;
+}
+
+.file-hint {
+    font-size: 11px;
+    color: #6b7280;
+    font-style: italic;
+    padding-left: 8px;
+}
+
+.file-upload-module:hover {
+    border-color: #93c5fd;
+    background: #f0f9ff;
+}
+
+/* 伪元素实现可视化按钮 */
+.file-upload-module::before {
+    content: "选择文件";
+    display: inline-block;
+    padding: 6px 12px;
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    border-radius: 4px;
+    color: #3b82f6;
+   
+    margin-right: 8px;
+    width: 50%;
+}
+
+/* 文件状态提示样式 */
+.file-status {
+    font-size: 11px;
+    color: #4b5563;
+    max-width: 180px;
+    text-align: right;
+}
+.beam-input-container {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+}
+
+.beam-input {
+    flex: 1;
+    padding: 6px 8px;
+    border: 1px solid #dde3e8;
+    border-radius: 4px;
+    font-size: 11px;
+    color: #4a5b6c;
+    background: #f9fafb;
+    max-width: 60px;
+    transition: all 0.2s ease;
+}
+
+.beam-input:focus {
+    border-color: #4285f4;
+    box-shadow: 0 0 0 2px rgba(66,133,244,0.1);
+    background: #ffffff;
+    outline: none;
+}
+
+.beam-hint {
+    font-size: 10px;
+    color: #6b7280;
+    margin-left: 6px;
+    font-style: italic;
+}
+.link-selector {
+    padding: 6px;
+    border: 1px solid #dde3e8;
+    border-radius: 3px;
+    font-size: 13px; /* 从12px减小到11px */
+    margin-right: 10px;
+    background: #f9fafb;
+    width: 10%; /* 从15%减小到10% */
+}
+.footer-controls {
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 1px solid #e0e0e0;
+    text-align: center;
+}
+
+.clear-cache-btn {
+    padding: 8px 16px;
+    background-color: #e74c3c;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: background-color 0.2s;
+}
+
+.clear-cache-btn:hover {
+    background-color: #c0392b;
+}
+        .link-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+            padding: 8px;
+            background-color: #f5f5f5;
+            border-radius: 4px;
+        }
+        
+        .multi-link-selector {
+            min-width: 80px;
+             max-height: 70px;
+        }
+        
+    .highlight-row {
+        position: relative;
+    }
+    .highlight-row::after {
+        content: "";
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: -1px;
+        height: 1px;
+        border-bottom: 1px dashed rgba(0, 0, 0, 0.8); /* 深色虚线，30%透明度 */
+        z-index: 1;
+    }
+    
+    .highlight-row:hover::after {
+        border-bottom-color: rgba(0, 0, 0, 0.2); /* 悬停时更淡的虚线 */
+    }
+    
+    /* 调整现有高亮行样式 */
+    .highlight-row {
+        background-color: #FFFFE0 !important;
+        font-weight: 500;
+        border-bottom: 1px solid transparent; /* 保留空间防止跳动 */
+    }
+        .highlight-row:hover {
+        background-color: #e9ecef !important;
+        opacity: 0.9;
+        transition: background-color 0.2s ease;
+}
+        /* 打印报告样式 */
+        .report-link-section {
+            margin-bottom: 20px;
+            page-break-inside: avoid;
+        }
+        .report-link-header {
+            background-color: #f0f8ff;
+            padding: 5px 10px;
+            border-left: 4px solid #4682b4;
+            margin-bottom: 10px;
+        }
+        .report-params-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 8px;
+        }
+        .report-param-item {
+            margin-bottom: 5px;
+            font-size: 9pt;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+         <div class="title-container">
+        <img src="CASC.png" class="logo">
+        <h1>卫星链路计算系统(内测版v1.4)</h1>
+       </div> 
+<div class="satellite-params">
+    <h2>卫星系统参数</h2>
+    <div class="param-grid">
+        <div class="param-item" required>
+            <label for="satelliteName">卫星名称</label>
+            <select id="satelliteName" required onchange="updateOrbitPosition()"></select>
+        </div>
+        <div class="param-item" required>
+            <label for="orbitPosition">轨道位置 (°E)</label>
+            <input type="text" id="orbitPosition" required>
+        </div>
+        <div class="param-item" required>
+            <label for="frequencyBand">工作频段</label>
+            <select id="frequencyBand" required>
+                <option value="Ku">Ku 频段</option>
+                <option value="C">C 频段</option>
+                <option value="DBS">DBS频段</option>
+        <option value="ExtC">扩展C频段</option>
+        <option value="ExtKu">扩展Ku频段</option>
+            </select>
+        </div>
+        <div class="param-item" required>
+            <label for="transponderStatus">转发器模式</label>
+            <select id="transponderStatus" required>
+                <option value="single">单载波模式</option>
+                <option value="multiple">多载波模式</option>
+            </select>
+        </div>
+        <div class="param-item" required>
+            <label for="uplinkPolarization">上行极化</label>
+            <select id="uplinkPolarization" required>
+                <option value="V">垂直极化 (V)</option>
+                <option value="H">水平极化 (H)</option>
+                <option value="C">圆极化 (C)</option>
+            </select>
+        </div>
+        <div class="param-item" required>
+            <label for="sfdRef">SFDref (dBW/m²)</label>
+            <input type="number" id="sfdRef" required value="-84">
+        </div>
+        <div class="param-item" required>
+            <label for="transponderBandwidth">转发器带宽 (MHz)</label>
+            <input type="number" id="transponderBandwidth" required value="36">
+        </div>
+ <div class="param-item">
+    <label for="deltaTheta" style="font-family: '微软雅黑';">邻星轨位差Δθ(°)</label>
+    <input type="number" id="deltaTheta" value="3" step="0.1" min="0" max="10">
+</div>
+<div class="param-item">
+    <label for="adjUplinkFactor" style="font-family: '微软雅黑';">上行邻星载干比补偿(dB)</label>
+    <input type="number" id="adjUplinkFactor" value="0" step="0.1">
+</div>
+<div class="param-item">
+    <label for="adjDownlinkFactor" style="font-family: '微软雅黑';">下行邻星载干比补偿(dB)</label>
+    <input type="number" id="adjDownlinkFactor" value="0" step="0.1">
+</div>
+<div class="param-item">
+    <label for="xpolUplinkFactor" style="font-family: '微软雅黑';">上行交叉极化载干比补偿(dB)</label>
+    <input type="number" id="xpolUplinkFactor" value="0" step="0.1">
+</div>
+<div class="param-item">
+    <label for="xpolDownlinkFactor" style="font-family: '微软雅黑';">下行交叉极化载干比补偿(dB)</label>
+    <input type="number" id="xpolDownlinkFactor" value="0" step="0.1">
+</div>
+<div class="param-item">
+    <label for="intermodFactor" style="font-family: '微软雅黑';">互调载干比补偿(dB)</label>
+    <input type="number" id="intermodFactor" value="0" step="0.1">
+</div>
+<div class="param-space">
+
+</div>
+<div class="param-space">
+
+</div>
+<div class="file-upload-section" style="width: 50%; margin-left: 0;">
+    <div class="file-upload-module" style="display: inline-block; width: calc(100% - 150px);">
+        <input type="file" 
+               id="satDataFiles"
+               class="custom-file-input"
+               multiple
+               aria-describedby="fileHint">
+        <div class="file-meta">
+            <span id="fileHint" class="file-hint">(选择gxt文件)</span>
+            <div class="file-status" id="fileStatus"></div>
+        </div>
+    </div>
+    <div class="beam-input-container" style="display: inline-block; width: 140px; margin-left: 10px;">
+        <input type="text" id="beamInput" value="中国波束" class="beam-input">
+        <span class="beam-hint">(选填)</span>
+    </div>
+
+    </div>   
+</div>
+</div>    
+        
+        <div class="button-container">
+            <div class="controls">
+             <select id="linkSelector" class="link-selector multi-link-selector" multiple>
+    <option value="1">链路1</option>
+    <option value="2">链路2</option>
+    <option value="3">链路3</option>
+    <option value="4">链路4</option>
+    <option value="5">链路5</option>
+    <option value="6">链路6</option>
+    <option value="7">链路7</option>
+    <option value="8">链路8</option>
+        </select>
+        <button class="print-btn" onclick="generatePrintView()">生成打印报告</button>
+        <button class="print-btn" onclick="saveConfigToFile()">保存配置文件</button>
+        <button class="print-btn" onclick="loadConfigFromFile()">加载配置文件</button>
+        
+               <button id="calculateBtn">开始计算</button>
+            </div>
+
+        </div>
+        
+        <div class="table-container">
+            <table id="mainTable">
+                <thead>
+                    <tr>
+            <th style="width: 15%;">参数</th>
+            <th style="width: 10.625%;">链路1</th>
+            <th style="width: 10.625%;">链路2</th>
+            <th style="width: 10.625%;">链路3</th>
+            <th style="width: 10.625%;">链路4</th>
+            <th style="width: 10.625%;">链路5</th>
+            <th style="width: 10.625%;">链路6</th>
+            <th style="width: 10.625%;">链路7</th>
+            <th style="width: 10.625%;">链路8</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    <!-- 上行站参数部分 -->
+                    <tr class="section-title">
+                        <td colspan="9">上行站参数</td>
+                    </tr>
+                    <!-- 上行站参数行会在这里动态生成 -->
+                    
+                    <!-- 分隔行 -->
+                    <tr class="section-divider">
+                        <td colspan="9"></td>
+                    </tr>
+                    
+                    <!-- 接收站参数部分 -->
+                    <tr class="section-title">
+                        <td colspan="9">接收站参数</td>
+                    </tr>
+                    <!-- 接收站参数行会在这里动态生成 -->
+                    
+                    <!-- 分隔行 -->
+                    <tr class="section-divider">
+                        <td colspan="9"></td>
+                    </tr>
+                    
+                    <!-- 载波参数部分 -->
+                    <tr class="section-title">
+                        <td colspan="9">载波参数</td>
+                    </tr>
+                    <!-- 载波参数行会在这里动态生成 -->
+                    
+                    <!-- 分隔行 -->
+                    <tr class="section-divider">
+                        <td colspan="9"><span style="font-size: 12px; color: #666;">点击计算结果可标记/取消标记</span></td>
+                    </tr>
+                    
+                    <!-- 计算结果部分 -->
+                    <tr class="section-title">
+                        <td colspan="9">计算结果</td>
+                    </tr>
+                    <!-- 计算结果行会在这里动态生成 -->
+                </tbody>
+            </table>
+        </div>
+<div class="footer-controls">
+    <button id="clearCacheBtn" class="clear-cache-btn">清除所有缓存数据</button>
+   
+</div>
+    </div>
+
+    <script>
+function saveConfigToFile() {
+    try {
+        // 收集所有需要保存的数据
+        const configData = {
+            satelliteParams: {
+                name: document.getElementById('satelliteName').value,
+                position: document.getElementById('orbitPosition').value,
+                frequencyBand: document.getElementById('frequencyBand').value,
+                transponderStatus: document.getElementById('transponderStatus').value,
+                uplinkPolarization: document.getElementById('uplinkPolarization').value,
+                sfdRef: document.getElementById('sfdRef').value,
+                transponderBandwidth: document.getElementById('transponderBandwidth').value,
+                deltaTheta: document.getElementById('deltaTheta').value,
+                beamInput: document.getElementById('beamInput').value,
+                adjUplinkFactor: document.getElementById('adjUplinkFactor').value,
+                adjDownlinkFactor: document.getElementById('adjDownlinkFactor').value,
+                xpolUplinkFactor: document.getElementById('xpolUplinkFactor').value,
+                xpolDownlinkFactor: document.getElementById('xpolDownlinkFactor').value,
+                intermodFactor: document.getElementById('intermodFactor').value
+            },
+            linkParams: {},
+                        highlightedRows: Array.from(document.querySelectorAll('tr.result-area.highlight-row'))
+                .map(row => row.dataset.paramId)
+        };
+
+        // 收集所有链路参数
+        for (let linkNum = 1; linkNum <= 8; linkNum++) {
+            configData.linkParams[`link${linkNum}`] = {};
+            
+            // 上行站参数
+            UPinputParams.forEach(param => {
+                const element = document.getElementById(`${param.id}_link${linkNum}`);
+                if (element) {
+                    configData.linkParams[`link${linkNum}`][param.id] = element.value;
+                }
+            });
+            
+            // 接收站参数
+            DNinputParams.forEach(param => {
+                const element = document.getElementById(`${param.id}_link${linkNum}`);
+                if (element) {
+                    configData.linkParams[`link${linkNum}`][param.id] = element.value;
+                }
+            });
+            
+            // 载波参数
+            CinputParams.forEach(param => {
+                const element = document.getElementById(`${param.id}_link${linkNum}`);
+                if (element) {
+                    configData.linkParams[`link${linkNum}`][param.id] = element.value;
+                }
+            });
+           
+        }
+
+        // 创建Blob对象
+        const blob = new Blob([JSON.stringify(configData, null, 2)], {type: 'application/json'});
+        const url = URL.createObjectURL(blob);
+        
+        // 创建下载链接
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `卫星链路配置_${new Date().toISOString().slice(0, 10)}.json`;
+        document.body.appendChild(a);
+        a.click();
+        
+        // 清理
+        setTimeout(() => {
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+        }, 100);
+
+    } catch (error) {
+        console.error('保存配置失败:', error);
+        alert('保存配置失败: ' + error.message);
+    }
+}
+
+// 从文件加载配置
+function loadConfigFromFile() {
+    try {
+        // 创建文件输入元素
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.json';
+        
+        input.onchange = e => {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = event => {
+                try {
+                    const configData = JSON.parse(event.target.result);
+                    
+                    // 验证文件格式
+                    if (!configData.satelliteParams || !configData.linkParams) {
+                        throw new Error('无效的配置文件格式');
+                    }
+                    
+                    // 加载卫星参数
+                    const satParams = configData.satelliteParams;
+                    document.getElementById('satelliteName').value = satParams.name || '';
+                    document.getElementById('orbitPosition').value = satParams.position || '';
+                    document.getElementById('frequencyBand').value = satParams.frequencyBand || 'Ku';
+                    document.getElementById('transponderStatus').value = satParams.transponderStatus || 'single';
+                    document.getElementById('uplinkPolarization').value = satParams.uplinkPolarization || 'V';
+                    document.getElementById('sfdRef').value = satParams.sfdRef || '-84';
+                    document.getElementById('transponderBandwidth').value = satParams.transponderBandwidth || '36';
+                    document.getElementById('deltaTheta').value = satParams.deltaTheta || '3';
+                    document.getElementById('beamInput').value = satParams.beamInput || '中国波束';
+                    document.getElementById('adjUplinkFactor').value = satParams.adjUplinkFactor || '0';
+                    document.getElementById('adjDownlinkFactor').value = satParams.adjDownlinkFactor || '0';
+                    document.getElementById('xpolUplinkFactor').value = satParams.xpolUplinkFactor || '0';
+                    document.getElementById('xpolDownlinkFactor').value = satParams.xpolDownlinkFactor || '0';
+                    document.getElementById('intermodFactor').value = satParams.intermodFactor || '0';
+                                   
+                    // 加载链路参数
+                    for (let linkNum = 1; linkNum <= 8; linkNum++) {
+                        const linkData = configData.linkParams[`link${linkNum}`];
+                        if (linkData) {
+                            // 上行站参数
+                            UPinputParams.forEach(param => {
+                                const element = document.getElementById(`${param.id}_link${linkNum}`);
+                                if (element && linkData[param.id] !== undefined) {
+                                    element.value = linkData[param.id];
+                                }
+                            });
+                            
+                            // 接收站参数
+                            DNinputParams.forEach(param => {
+                                const element = document.getElementById(`${param.id}_link${linkNum}`);
+                                if (element && linkData[param.id] !== undefined) {
+                                    element.value = linkData[param.id];
+                                }
+                            });
+                            
+                            // 载波参数
+                            CinputParams.forEach(param => {
+                                const element = document.getElementById(`${param.id}_link${linkNum}`);
+                                if (element && linkData[param.id] !== undefined) {
+                                    element.value = linkData[param.id];
+                                }
+                            });
+                        }
+                    }
+                    
+                  if (configData.highlightedRows) {
+                    document.querySelectorAll('tr.result-area').forEach(row => {
+                        row.classList.toggle('highlight-row', 
+                            configData.highlightedRows.includes(row.dataset.paramId));
+                    });
+                }
+                } catch (error) {
+                    console.error('加载配置失败:', error);
+                    alert('加载配置失败: ' + error.message);
+                }
+            };
+            reader.readAsText(file);
+        };
+        
+        // 触发文件选择
+        input.click();
+    } catch (error) {
+        console.error('加载配置失败:', error);
+        alert('加载配置失败: ' + error.message);
+    }
+}
+
+ const DB_NAME = 'SatLinkCalculatorDB';
+        const DB_VERSION = 1;
+        const STORE_NAME = 'satelliteFiles';
+        let db;
+
+        // 初始化数据库
+        function initDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open(DB_NAME, DB_VERSION);
+                
+                request.onerror = (event) => {
+                    console.error('数据库打开失败:', event.target.error);
+                    reject('数据库初始化失败');
+                };
+                
+                request.onsuccess = (event) => {
+                    db = event.target.result;
+                    console.log('数据库已打开');
+                    resolve(db);
+                };
+                
+                request.onupgradeneeded = (event) => {
+                    const db = event.target.result;
+                    if (!db.objectStoreNames.contains(STORE_NAME)) {
+                        const store = db.createObjectStore(STORE_NAME, { keyPath: 'fileName' });
+                        console.log('对象存储空间已创建');
+                    }
+                };
+            });
+        }
+
+        // 保存文件到IndexedDB
+        function saveFileToDB(fileName, content) {
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction([STORE_NAME], 'readwrite');
+                const store = transaction.objectStore(STORE_NAME);
+                
+                const request = store.put({ fileName, content });
+                
+                request.onsuccess = () => {
+                    console.log(`文件 ${fileName} 已保存到数据库`);
+                    resolve();
+                };
+                
+                request.onerror = (event) => {
+                    console.error('保存文件失败:', event.target.error);
+                    reject('保存文件失败');
+                };
+            });
+        }
+
+        // 从IndexedDB获取所有文件
+        function getAllFilesFromDB() {
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction([STORE_NAME], 'readonly');
+                const store = transaction.objectStore(STORE_NAME);
+                const request = store.getAll();
+                
+                request.onsuccess = (event) => {
+                    resolve(event.target.result || []);
+                };
+                
+                request.onerror = (event) => {
+                    console.error('获取文件失败:', event.target.error);
+                    reject('获取文件失败');
+                };
+            });
+        }
+
+        // 清除IndexedDB中的所有文件
+        function clearFilesFromDB() {
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction([STORE_NAME], 'readwrite');
+                const store = transaction.objectStore(STORE_NAME);
+                const request = store.clear();
+                
+                request.onsuccess = () => {
+                    console.log('文件缓存已清除');
+                    resolve();
+                };
+                
+                request.onerror = (event) => {
+                    console.error('清除文件缓存失败:', event.target.error);
+                    reject('清除文件缓存失败');
+                };
+            });
+        }
+// 在原有脚本中添加键盘事件监听
+document.addEventListener('DOMContentLoaded', () => {
+    // 监听全局键盘事件
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.target.matches('input, select, textarea')) {
+            e.preventDefault();
+            document.getElementById('calculateBtn').click();
+        }
+    });
+    
+});
+
+
+        // 卫星数据
+        const satellites = [ 
+            { "name": "CHINASAT 6D", "position": "125" },
+            { "name": "CHINASAT 6C", "position": "130" },
+            { "name": "CHINASAT 6E", "position": "115.5" },
+            { "name": "CHINASAT 9", "position": "92.2" },
+            { "name": "CHINASAT 9B", "position": "101.4" },
+            { "name": "CHINASAT 9C", "position": "92.2" },
+            { "name": "CHINASAT 10", "position": "110.5" },
+            { "name": "CHINASAT 10R", "position": "110.5" },
+            { "name": "CHINASAT 11", "position": "98" },
+            { "name": "CHINASAT 12", "position": "87.5" },
+            { "name": "CHINASAT 15", "position": "51.5" },
+            { "name": "CHINASAT 19", "position": "163.4" },
+            { "name": "APSTAR 5C", "position": "138" },
+            { "name": "APSTAR 6C", "position": "134" },
+            { "name": "APSTAR 7", "position": "76.5" },
+            { "name": "APSTAR 9", "position": "142" },
+            { "name": "APSTAR 6D", "position": "134" },
+            { "name": "其他", "position": "" }
+        ];
+
+const citiesData = [
+    // 中国省会及主要城市 (70个)
+    {name: "北京", lat: 39.904, lon: 116.407, alt: 43.5},
+    {name: "上海", lat: 31.230, lon: 121.473, alt: 4.0},
+    {name: "天津", lat: 39.084, lon: 117.201, alt: 5.0},
+    {name: "重庆", lat: 29.563, lon: 106.551, alt: 237.0},
+    {name: "哈尔滨", lat: 45.803, lon: 126.535, alt: 150.0},
+    {name: "长春", lat: 43.817, lon: 125.324, alt: 215.0},
+    {name: "沈阳", lat: 41.805, lon: 123.431, alt: 55.0},
+    {name: "呼和浩特", lat: 40.842, lon: 111.749, alt: 1065.0},
+    {name: "石家庄", lat: 38.042, lon: 114.514, alt: 83.0},
+    {name: "乌鲁木齐", lat: 43.825, lon: 87.617, alt: 800.0},
+    {name: "兰州", lat: 36.061, lon: 103.834, alt: 1520.0},
+    {name: "西宁", lat: 36.623, lon: 101.779, alt: 2275.0},
+    {name: "西安", lat: 34.342, lon: 108.940, alt: 400.0},
+    {name: "银川", lat: 38.487, lon: 106.232, alt: 1112.0},
+    {name: "郑州", lat: 34.746, lon: 113.625, alt: 110.0},
+    {name: "济南", lat: 36.651, lon: 117.120, alt: 58.0},
+    {name: "太原", lat: 37.870, lon: 112.549, alt: 800.0},
+    {name: "合肥", lat: 31.821, lon: 117.227, alt: 37.0},
+    {name: "武汉", lat: 30.593, lon: 114.305, alt: 37.0},
+    {name: "长沙", lat: 28.228, lon: 112.939, alt: 66.0},
+    {name: "南京", lat: 32.060, lon: 118.797, alt: 20.0},
+    {name: "成都", lat: 30.572, lon: 104.066, alt: 500.0},
+    {name: "贵阳", lat: 26.647, lon: 106.630, alt: 1070.0},
+    {name: "昆明", lat: 25.043, lon: 102.832, alt: 1892.0},
+    {name: "南宁", lat: 22.817, lon: 108.366, alt: 72.0},
+    {name: "拉萨", lat: 29.645, lon: 91.117, alt: 3650.0},
+    {name: "杭州", lat: 30.274, lon: 120.155, alt: 19.0},
+    {name: "南昌", lat: 28.683, lon: 115.858, alt: 50.0},
+    {name: "广州", lat: 23.129, lon: 113.264, alt: 21.0},
+    {name: "福州", lat: 26.075, lon: 119.296, alt: 10.0},
+    {name: "台北", lat: 25.033, lon: 121.565, alt: 10.0},
+    {name: "海口", lat: 20.020, lon: 110.320, alt: 14.0},
+    {name: "香港", lat: 22.319, lon: 114.169, alt: 32.0},
+    {name: "澳门", lat: 22.199, lon: 113.544, alt: 22.0},
+    // 其他中国主要城市...
+    {name: "大连", lat: 38.914, lon: 121.615, alt: 93.0},
+    {name: "青岛", lat: 36.067, lon: 120.383, alt: 76.0},
+    {name: "宁波", lat: 29.868, lon: 121.544, alt: 150.0},
+    {name: "厦门", lat: 24.480, lon: 118.089, alt: 63.0},
+    {name: "深圳", lat: 22.543, lon: 114.058, alt: 17.0},
+    {name: "珠海", lat: 22.271, lon: 113.576, alt: 36.0},
+    {name: "汕头", lat: 23.354, lon: 116.682, alt: 51.0},
+    {name: "三亚", lat: 18.253, lon: 109.504, alt: 7.0},
+    {name: "桂林", lat: 25.234, lon: 110.180, alt: 153.0},
+    {name: "张家界", lat: 29.117, lon: 110.479, alt: 183.0},
+    {name: "丽江", lat: 26.855, lon: 100.228, alt: 2400.0},
+    {name: "敦煌", lat: 40.142, lon: 94.662, alt: 1140.0},
+    {name: "喀什", lat: 39.468, lon: 75.994, alt: 1289.0},
+    {name: "林芝", lat: 29.654, lon: 94.361, alt: 3000.0},
+    {name: "日喀则", lat: 29.267, lon: 88.881, alt: 3836.0},
+    {name: "阿里", lat: 32.501, lon: 80.106, alt: 4278.0},
+    {name: "那曲", lat: 31.476, lon: 92.071, alt: 4507.0},
+    {name: "昌都", lat: 31.141, lon: 97.172, alt: 3240.0},
+    {name: "山南", lat: 29.237, lon: 91.773, alt: 3700.0},
+    {name: "嘉峪关", lat: 39.773, lon: 98.290, alt: 1700.0},
+    {name: "酒泉", lat: 39.734, lon: 98.500, alt: 1477.0},
+    {name: "西昌", lat: 27.892, lon: 102.265, alt: 1590.0},
+    {name: "文昌", lat: 19.613, lon: 110.750, alt: 34.0},
+    {name: "太原卫星发射中心", lat: 38.849, lon: 111.608, alt: 1500.0},
+    {name: "酒泉卫星发射中心", lat: 40.960, lon: 100.298, alt: 1000.0},
+    {name: "西昌卫星发射中心", lat: 28.246, lon: 102.029, alt: 1500.0},
+    {name: "文昌航天发射场", lat: 19.614, lon: 110.955, alt: 5.0},
+    {name: "西安卫星测控中心", lat: 34.207, lon: 108.875, alt: 400.0},
+
+    {name: "中国卫通北京地球站", lat: 40.045, lon: 116.300, alt: 45.0},
+    {name: "中国卫通怀来地球站", lat: 40.42, lon: 115.520, alt: 792.0},
+    {name: "中国卫通海口地球站", lat: 20.033, lon: 110.169, alt: 20.0},
+    {name: "中国卫通成都地球站", lat: 30.670, lon: 104.060, alt: 500.0},
+    {name: "中国卫通喀什地球站", lat: 39.470, lon: 75.990, alt: 1290.0},
+   
+    
+    // 国际主要城市 (50个)
+    {name: "东京", lat: 35.689, lon: 139.692, alt: 40.0},
+    {name: "首尔", lat: 37.566, lon: 126.978, alt: 38.0},
+    {name: "曼谷", lat: 13.756, lon: 100.502, alt: 2.0},
+    {name: "新加坡", lat: 1.352, lon: 103.819, alt: 15.0},
+    {name: "吉隆坡", lat: 3.139, lon: 101.687, alt: 22.0},
+    {name: "雅加达", lat: -6.208, lon: 106.845, alt: 8.0},
+    {name: "马尼拉", lat: 14.599, lon: 120.984, alt: 16.0},
+    {name: "河内", lat: 21.028, lon: 105.854, alt: 16.0},
+    {name: "胡志明市", lat: 10.823, lon: 106.629, alt: 19.0},
+    {name: "新德里", lat: 28.613, lon: 77.209, alt: 216.0},
+    {name: "孟买", lat: 19.076, lon: 72.877, alt: 14.0},
+    {name: "伊斯兰堡", lat: 33.684, lon: 73.047, alt: 507.0},
+    {name: "卡拉奇", lat: 24.861, lon: 67.010, alt: 8.0},
+    {name: "迪拜", lat: 25.204, lon: 55.271, alt: 5.0},
+    {name: "利雅得", lat: 24.713, lon: 46.675, alt: 612.0},
+    {name: "德黑兰", lat: 35.689, lon: 51.389, alt: 1200.0},
+    {name: "安卡拉", lat: 39.933, lon: 32.859, alt: 938.0},
+    {name: "伊斯坦布尔", lat: 41.008, lon: 28.978, alt: 40.0},
+    {name: "莫斯科", lat: 55.755, lon: 37.617, alt: 156.0},
+    {name: "圣彼得堡", lat: 59.934, lon: 30.335, alt: 3.0},
+    {name: "柏林", lat: 52.520, lon: 13.405, alt: 34.0},
+    {name: "巴黎", lat: 48.856, lon: 2.352, alt: 35.0},
+    {name: "伦敦", lat: 51.507, lon: -0.128, alt: 24.0},
+    {name: "罗马", lat: 41.902, lon: 12.496, alt: 21.0},
+    {name: "马德里", lat: 40.416, lon: -3.703, alt: 667.0},
+    {name: "里斯本", lat: 38.722, lon: -9.139, alt: 2.0},
+    {name: "阿姆斯特丹", lat: 52.367, lon: 4.904, alt: -2.0},
+    {name: "布鲁塞尔", lat: 50.850, lon: 4.351, alt: 13.0},
+    {name: "维也纳", lat: 48.208, lon: 16.373, alt: 171.0},
+    {name: "日内瓦", lat: 46.204, lon: 6.143, alt: 375.0},
+    {name: "斯德哥尔摩", lat: 59.329, lon: 18.068, alt: 28.0},
+    {name: "奥斯陆", lat: 59.913, lon: 10.752, alt: 23.0},
+    {name: "赫尔辛基", lat: 60.169, lon: 24.938, alt: 17.0},
+    {name: "哥本哈根", lat: 55.676, lon: 12.568, alt: 14.0},
+    {name: "华沙", lat: 52.229, lon: 21.012, alt: 113.0},
+    {name: "布拉格", lat: 50.075, lon: 14.437, alt: 177.0},
+    {name: "布达佩斯", lat: 47.497, lon: 19.040, alt: 102.0},
+    {name: "雅典", lat: 37.983, lon: 23.727, alt: 70.0},
+    {name: "开罗", lat: 30.044, lon: 31.236, alt: 23.0},
+    {name: "约翰内斯堡", lat: -26.204, lon: 28.047, alt: 1753.0},
+    {name: "内罗毕", lat: -1.286, lon: 36.817, alt: 1795.0},
+    {name: "华盛顿", lat: 38.907, lon: -77.037, alt: 20.0},
+    {name: "纽约", lat: 40.712, lon: -74.006, alt: 10.0},
+    {name: "洛杉矶", lat: 34.052, lon: -118.244, alt: 93.0},
+    {name: "芝加哥", lat: 41.878, lon: -87.629, alt: 182.0},
+    {name: "多伦多", lat: 43.653, lon: -79.383, alt: 76.0},
+    {name: "温哥华", lat: 49.282, lon: -123.121, alt: 2.0},
+    {name: "墨西哥城", lat: 19.432, lon: -99.133, alt: 2240.0},
+    {name: "里约热内卢", lat: -22.906, lon: -43.173, alt: 2.0},
+    {name: "布宜诺斯艾利斯", lat: -34.603, lon: -58.382, alt: 25.0},
+    {name: "悉尼", lat: -33.868, lon: 151.209, alt: 6.0},
+    {name: "墨尔本", lat: -37.813, lon: 144.963, alt: 31.0}
+];
+        // 初始化卫星选择框
+        function initSatelliteSelector() {
+            const select = document.getElementById('satelliteName');
+        
+            satellites.forEach(sat => {
+                const option = document.createElement('option');
+                option.value = sat.name;
+                option.textContent = `${sat.name}`;
+                select.appendChild(option);
+            });
+        }
+
+        // 更新轨道位置
+function updateOrbitPosition() {
+    const selectedName = document.getElementById('satelliteName').value;
+    const satellite = satellites.find(sat => sat.name === selectedName);
+    document.getElementById('orbitPosition').value = satellite?.position || ""; // 确保不为undefined
+}
+
+function initCitySelectors() {
+   for (let linkNum = 1; linkNum <= 8; linkNum++) {
+        // 上行站选择器
+        const upSelect = createCitySelector(`earthStationLocation_link${linkNum}`, linkNum, 'up');
+        const upInput = document.getElementById(`earthStationLocation_link${linkNum}`);
+        if (upInput) {
+            upInput.parentNode.replaceChild(upSelect, upInput);
+        }
+        
+        // 接收站选择器
+        const dnSelect = createCitySelector(`rxEarthStationLocation_link${linkNum}`, linkNum, 'dn');
+        const dnInput = document.getElementById(`rxEarthStationLocation_link${linkNum}`);
+        if (dnInput) {
+            dnInput.parentNode.replaceChild(dnSelect, dnInput);
+        }
+    }
+}
+
+// 创建城市选择器
+function createCitySelector(id, linkNum, type) {
+    const select = document.createElement('select');
+    select.id = id;
+    select.className = 'city-selector';
+    
+    // 添加默认选项
+    const defaultOption = document.createElement('option');
+    defaultOption.value = '';
+    defaultOption.textContent = type === 'up' ? '选择上行站' : '选择接收站';
+    select.appendChild(defaultOption);
+    
+    // 添加自定义选项
+    const customOption = document.createElement('option');
+    customOption.value = 'custom';
+    customOption.textContent = '自定义...';
+    select.appendChild(customOption);
+    
+    // 添加中国城市分组
+    const chinaGroup = document.createElement('optgroup');
+    chinaGroup.label = '中国城市';
+    citiesData.slice(0, 67).forEach(city => {
+        const option = document.createElement('option');
+        option.value = city.name;
+        option.textContent = city.name;
+        option.dataset.lat = city.lat;
+        option.dataset.lon = city.lon;
+        option.dataset.alt = city.alt;
+        chinaGroup.appendChild(option);
+    });
+    select.appendChild(chinaGroup);
+    
+    // 添加国际城市分组
+    const intlGroup = document.createElement('optgroup');
+    intlGroup.label = '国际城市';
+    citiesData.slice(67).forEach(city => {
+        const option = document.createElement('option');
+        option.value = city.name;
+        option.textContent = city.name;
+        option.dataset.lat = city.lat;
+        option.dataset.lon = city.lon;
+        option.dataset.alt = city.alt;
+        intlGroup.appendChild(option);
+    });
+    select.appendChild(intlGroup);
+    
+    // 添加事件监听
+    select.addEventListener('change', function() {
+        if (this.value === 'custom') {
+            // 切换到自定义输入
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.id = this.id;
+            input.value = '';
+            input.placeholder = '输入自定义名称';
+            input.className = 'city-input';
+            this.parentNode.replaceChild(input, this);
+            
+            // 添加失去焦点事件
+            input.addEventListener('blur', function() {
+                if (this.value.trim() === '') {
+                    // 如果为空，恢复选择器
+                    const newSelect = createCitySelector(this.id, linkNum, type);
+                    this.parentNode.replaceChild(newSelect, this);
+                }
+            });
+        } else if (this.value) {
+            // 自动填充经纬度和海拔
+            const selectedOption = this.options[this.selectedIndex];
+            if (selectedOption.dataset.lat && selectedOption.dataset.lon && selectedOption.dataset.alt) {
+                if (type === 'up') {
+                    document.getElementById(`latitude_link${linkNum}`).value = selectedOption.dataset.lat;
+                    document.getElementById(`longitude_link${linkNum}`).value = selectedOption.dataset.lon;
+                    document.getElementById(`altitude_link${linkNum}`).value = selectedOption.dataset.alt;
+                    // 触发降雨率估算
+                    estimateUplinkRainRate(linkNum);
+                    
+                    // 延迟执行以确保所有值已更新
+                    setTimeout(() => {
+                        // 更新G/T值
+                        updateSatelliteParams();
+                    }, 100);
+                } else {
+                    document.getElementById(`rxLatitude_link${linkNum}`).value = selectedOption.dataset.lat;
+                    document.getElementById(`rxLongitude_link${linkNum}`).value = selectedOption.dataset.lon;
+                    document.getElementById(`rxAltitude_link${linkNum}`).value = selectedOption.dataset.alt;
+                    // 触发降雨率估算
+                    estimateDownlinkRainRate(linkNum);
+                    
+                    // 延迟执行以确保所有值已更新
+                    setTimeout(() => {
+                        // 更新EIRP值
+                        updateSatelliteParams();
+                    }, 100);
+                }
+            }
+        }
+    });
+    
+    return select;
+}
+
+        // 参数定义
+        const UPinputParams = [
+            // 上行站参数
+            {name: "地面站位置", id: "earthStationLocation", unit: "", defaultValue: "发信站"},
+            {name: "天线口径", id: "antennaDiameter", unit: "m"},
+            {name: "经度", id: "longitude", unit: "°E"},
+            {name: "纬度", id: "latitude", unit: "°N"},
+            {name: "卫星接收天线增益/噪声温度", id: "G_Ts", unit: "dB/K"},
+            {name: "海拔", id: "altitude", unit: "m", defaultValue: "0"},
+            {name: "超年均0.01%时间降雨率", id: "rainRate", unit: "mm/hr"},
+            {name: "天线效率", id: "antennaEfficiency", unit: "%", defaultValue: "65"},
+            {name: "功放输出补偿", id: "paBackoff", unit: "dB"},
+            {name: "发射馈线损耗", id: "feederLoss", unit: "dB"},
+            {name: "上行功率控制UPC", id: "uplinkPowerControl", unit: "", options: ["否", "是"]},
+            {name: "上行可用度", id: "uplinkAvailability", unit: "%", defaultValue: "99.90"}
+        ];
+        
+        const DNinputParams = [
+            // 接收站参数
+            {name: "地面站位置", id: "rxEarthStationLocation", unit: "", defaultValue: "收信站"},
+            {name: "天线口径", id: "rxAntennaDiameter", unit: "m"},
+            {name: "经度", id: "rxLongitude", unit: "°E"},
+            {name: "纬度", id: "rxLatitude", unit: "°N"},
+            {name: "卫星有效全向辐射功率", id: "rxEIRP", unit: "dBW"},
+            {name: "海拔", id: "rxAltitude", unit: "m", defaultValue: "0"},
+            {name: "超年均0.01%时间降雨率", id: "rxRainRate", unit: "mm/h"},
+            {name: "天线效率", id: "rxAntennaEfficiency", unit: "%", defaultValue: "65"},
+            {name: "下行可用度", id: "rxDownlinkAvailability", unit: "%", defaultValue: "99.90"}
+        ];
+        
+        const CinputParams = [
+            // 载波参数
+            {name: "载波信息速率", id: "infoRate", unit: "kbps", defaultValue: "2048"},
+            {name: "调制技术", id: "modulation", unit: "", defaultValue: "BPSK",
+                options: ["BPSK", "QPSK", "8PSK", "8QAM", "16QAM", "16PSK"]},
+            {name: "前向纠错码率", id: "fec", unit: "0<R≤1", defaultValue: "0.75"},
+            {name: "RS编码码率", id: "rsCode", unit: "0<R≤1", defaultValue: "1.00"},
+            {name: "载波带宽分配因子", id: "bandwidthFactor", unit: "", defaultValue: "1.20"},
+            {name: "误码率", id: "ber", unit: "1×10⁻ⁿ", defaultValue: "7"},
+            {name: "比特信噪比Eb/N₀", id: "ebno", unit: "dB", defaultValue: "5.5"},
+            {name: "系统余量", id: "margin", unit: "dB", defaultValue: "3.00"}
+        ];
+
+        const resultParams = [
+            {name: "载波分配带宽", id: "allocBandwidthResult", unit: "kHz"},
+            {name: "载波功率带宽", id: "PowerBWResult", unit: "kHz"},
+            {name: "载波带宽占用比", id: "bandwidthUsageRatio", unit: "%"},
+            {name: "载波卫星功率占用比", id: "powerUsageRatio", unit: "%"},
+            {name: "上行站载波有效全向辐射功率", id: "stationEIRPResult", unit: "dBW"},
+            {name: "载波占有卫星有效全向辐射功率", id: "RXeirpPerCarrierResult", unit: "dBW"},
+            {name: "载波预算功放功率", id: "selectedPowerResult", unit: "dBW"},
+            {name: "功放预算输出功率", id: "selectedPowerWResult", unit: "W"},
+            {name: "功放最大输出功率", id: "paRecommendation", unit: "W"},
+            {name: "地球站所发功率谱密度", id: "stationPSDResult", unit: "dBW/Hz"},
+            {name: "到达卫星的载波通量密度", id: "PFDcResult", unit: "dBW/m²"},
+            {name: "链路余量", id: "linkmargin", unit: "dB"},
+            {name: "上行站天线口径", id: "earthAntennaDiameterResult", unit: "m"},
+            {name: "接收站天线口径", id: "rxAntennaDiameterResult", unit: "m"},
+            {name: "轨道位置", id: "orbitPositionResult", unit: "°E"},
+            {name: "卫星饱和有效全向辐射功率EIRP", id: "EIRPsResult", unit: "dBW"},
+            {name: "卫星饱和通量密度SFD", id: "SFDsResult", unit: "dB/m²"},
+            {name: "转发器输入回退 BOi", id: "BOiResult", unit: "dB"},
+            {name: "转发器输出补偿 BOo", id: "BOoResult", unit: "dB"},
+            {name: "上行工作频率", id: "uplinkFrequencyResult", unit: "GHz"},
+            {name: "下行工作频率", id: "downlinkFrequencyResult", unit: "GHz"},
+            {name: "转发器带宽", id: "transponderBandwidthResult", unit: "MHz"},
+            {name: "上行极化方式", id: "uplinkPolarizationResult", unit: ""},
+            {name: "下行极化方式", id: "downlinkPolarizationResult", unit: ""},
+            {name: "卫星天线每平方米增益", id: "antennaGainResult", unit: "dB/m²"},
+            {name: "上行可用度", id: "uplinkAvailabilityResult", unit: "%"},
+            {name: "下行可用度", id: "downlinkAvailabilityResult", unit: "%"},
+            {name: "系统可用度", id: "systemAvailabilityResult", unit: "%"},
+            {name: "信息速率", id: "infoRateResult", unit: "kbps"},
+            {name: "调制方式", id: "modulationResult", unit: ""},
+            {name: "调制系数", id: "modulationFactorResult", unit: ""},
+            {name: "误码率", id: "berResult", unit: ""},
+            {name: "Eb/N0", id: "ebnoResult", unit: "dB"},
+            {name: "所罗门编码系数", id: "rsCodeResult", unit: ""},
+            {name: "FEC", id: "fecResult", unit: ""},
+            {name: "载波传输速率", id: "carrierRateResult", unit: "kbps"},
+            {name: "载波符号速率", id: "symbolRateResult", unit: "kBaud"},
+            {name: "载波等效噪声带宽", id: "noiseBW", unit: "kHz"},
+            {name: "载波等效噪声带宽", id: "RXnoiseBW", unit: "dB-Hz"},
+            {name: "载波总C/N", id: "carrierTotalCN", unit: "dB"},
+            {name: "门限CN", id: "thresholdCN", unit: "dB"},
+            {name: "系统余量", id: "marginResult", unit: "dB"},
+            {name: "上行站经度", id: "earthLongitudeResult", unit: "°E"},
+            {name: "上行站纬度", id: "earthLatitudeResult", unit: "°N"},
+            {name: "上行站仰角", id: "elevationResult", unit: "°"},
+            {name: "上行站方位角", id: "azimuthResult", unit: "°"},
+            {name: "上行站天线效率", id: "earthAntennaEfficiencyResult", unit: "%"},
+            {name: "波长", id: "wavelengthResult", unit: "m"},
+            {name: "上行半功率波束宽度", id: "beamWidthResult", unit: "°"},
+            {name: "上行发射天线增益", id: "txAntennaGainResult", unit: "dB"},
+            {name: "上行站发射馈线损耗", id: "feederLossResult", unit: "dB"},
+            {name: "上行站星地距离", id: "slantRangeResult", unit: "km"},
+            {name: "上行自由空间损耗", id: "uplinkFSLResult", unit: "dB"},
+            {name: "上行降雨衰减", id: "uplinkRainAttenuation", unit: "dB"},
+            {name: "接收站经度", id: "rxLongitudeResult", unit: "°E"},
+            {name: "接收站纬度", id: "rxLatitudeResult", unit: "°N"},
+            {name: "接收站仰角", id: "rxElevationResult", unit: "°"},
+            {name: "接收站方位角", id: "rxAzimuthResult", unit: "°"},
+            {name: "接收站天线效率", id: "rxAntennaEfficiencyResult", unit: "%"},
+            {name: "接收天线增益", id: "rxAntennaGainResult", unit: "dB"},
+            {name: "下行站星地距离", id: "rxSlantRangeResult", unit: "km"},
+            {name: "下行自由空间损耗", id: "downlinkFSLResult", unit: "dB"},
+            {name: "下行降雨衰减", id: "downlinkRainAttenuationResult", unit: "dB"},
+            {name: "降雨噪声温度", id: "rainNoiseTempResult", unit: "K"},
+            {name: "接收馈线损耗", id: "rxFeederLossResult", unit: "dB"},
+            {name: "天线噪声温度", id: "antennaNoiseTempResult", unit: "K"},
+            {name: "接收机噪声温度", id: "receiverNoiseTempResult", unit: "K"},
+            {name: "接收系统等效噪声温度", id: "systemNoiseTempKResult", unit: "K"},
+            {name: "接收系统等效噪声温度", id: "systemNoiseTempDbResult", unit: "dB"},
+            {name: "地球站G/Te", id: "gOverTeResult", unit: "dB/K"},
+            {name: "降雨衰减等效G/T下降", id: "gOverTdegradationResult", unit: "dB"},
+            {name: "卫星上行C/T", id: "uplinkCTResult", unit: "dB/K"},
+            {name: "相邻卫星上行干扰C/T", id: "adjUplinkCTResult", unit: "dB/K"},
+            {name: "交叉极化上行干扰C/T", id: "xpolUplinkCTResult", unit: "dB/K"},
+            {name: "卫星下行C/T", id: "downlinkCTResult", unit: "dB/K"},
+            {name: "相邻卫星下行干扰C/T", id: "adjDownlinkCTResult", unit: "dB/K"},
+            {name: "交叉极化下行干扰C/T", id: "xpolDownlinkCTResult", unit: "dB/K"},
+            {name: "卫星互调C/T", id: "intermodCTResult", unit: "dB/K"},
+            {name: "卫星总C/T", id: "totalCTResult", unit: "dB/K"},
+            {name: "卫星总C/T-上行雨天", id: "totalCTRainResult", unit: "dB/K"},
+            {name: "载波门限值C/T", id: "carrierThresholdCT", unit: "dB/K"},
+            {name: "载波总C/T", id: "carrierTotalCT", unit: "dB/K"},
+            {name: "转发器容量-上行雨天", id: "transponderCapacity", unit: "dB"},
+            {name: "每载波占卫星EIRPs-上行雨天", id: "eirpPerCarrier", unit: "dBW"},
+            {name: "卫星总C/T-下行雨天", id: "downlinkComponentResult", unit: "dB/K"},
+            {name: "转发器容量-下行雨天", id: "RXtransponderCapacityResult", unit: "dB"},
+            {name: "载波卫星功率占用比-上行雨天", id: "uplinkPowerRatioResult", unit: "%"},
+            {name: "载波卫星功率占用比-下行雨天", id: "downlinkPowerRatioResult", unit: "%"}
+        ];
+
+
+
+        // 初始化表格
+        function initTable() {
+            const tableBody = document.getElementById('tableBody');
+            
+            // 清空表格体（保留标题行）
+            while (tableBody.children.length > 8) {
+                tableBody.removeChild(tableBody.lastChild);
+            }
+            
+            // 添加上行站参数输入行
+            UPinputParams.forEach(param => {
+                addInputRow(tableBody, param);
+            });
+            
+            // 添加接收站参数输入行
+            DNinputParams.forEach(param => {
+                addInputRow(tableBody, param);
+            });
+            
+            // 添加载波参数输入行
+            CinputParams.forEach(param => {
+                addInputRow(tableBody, param);
+            });
+            
+            // 添加计算结果行（可拖拽）
+            resultParams.forEach((param, index) => {
+                addResultRow(tableBody, param, index);
+            });
+            
+            // 初始化拖拽功能
+            initDragAndDrop();
+            
+        }
+        
+        // 添加输入行
+function addInputRow(tableBody, param, section) {
+    const row = document.createElement('tr');
+    row.className = 'input-area';
+    
+    const nameCell = document.createElement('td');
+    nameCell.textContent = `${param.name}${param.unit ? ` (${param.unit})` : ''}`;
+    row.appendChild(nameCell);
+    
+    // 为每个链路添加输入单元格
+    for (let i = 1; i <= 8; i++) {
+        const inputCell = document.createElement('td');
+        if (param.options) {
+            // 如果是下拉选择框
+            const select = document.createElement('select');
+            select.id = `${param.id}_link${i}`;
+            param.options.forEach(option => {
+                const optElement = document.createElement('option');
+                optElement.value = option;
+                optElement.textContent = option;
+                select.appendChild(optElement);
+            });
+            inputCell.appendChild(select);
+        } else {
+            // 普通文本输入框
+            const input = document.createElement('input');
+            input.type = param.id === 'ber' ? 'number' : ((param.id.includes('Rate') || param.id.includes('diameter')) ? 'number' : 'text');
+            input.step = param.id === 'fec' || param.id === 'rsCode' || param.id === 'bandwidthFactor' ? '0.01' : 'any';
+            input.id = `${param.id}_link${i}`;
+            input.placeholder = `输入值`;
+            if (param.defaultValue) {
+                input.value = param.defaultValue;
+            }
+            input.style.width = '90%';
+            inputCell.appendChild(input);
+            
+            // 绑定经纬度变化事件
+            if (param.id === 'longitude' || param.id === 'latitude') {
+                input.addEventListener('change', function() {
+                    estimateUplinkRainRate(i);
+                });
+            }
+            if (param.id === 'rxLongitude' || param.id === 'rxLatitude') {
+                input.addEventListener('change', function() {
+                    estimateDownlinkRainRate(i);
+                });
+            }
+        }
+        row.appendChild(inputCell);
+    }
+    
+    // 根据section类型确定插入位置
+    let targetSectionTitle;
+    switch (section) {
+        case 'UP':
+            targetSectionTitle = '上行站参数';
+            break;
+        case 'DN':
+            targetSectionTitle = '接收站参数';
+            break;
+        case 'C':
+            targetSectionTitle = '载波参数';
+            break;
+        default:
+            targetSectionTitle = '';
+    }
+    
+    // 查找对应的标题行
+    const sectionTitleRow = Array.from(tableBody.children).find(child =>
+        child.textContent.includes(targetSectionTitle)
+    );
+    
+    if (sectionTitleRow) {
+        // 找到标题行后的分隔行（.section-divider）
+        let nextRow = sectionTitleRow.nextElementSibling;
+        while (nextRow) {
+            if (nextRow.classList.contains('section-divider')) {
+                // 插入到标题行和分隔行之间
+                tableBody.insertBefore(row, nextRow);
+                break;
+            }
+            nextRow = nextRow.nextElementSibling;
+        }
+        // 若未找到分隔行，插入到标题行之后
+        if (!nextRow) {
+            tableBody.insertBefore(row, sectionTitleRow.nextSibling);
+        }
+    } else {
+        // 默认插入到表格末尾（容错处理）
+        tableBody.appendChild(row);
+    }
+}
+
+// 初始化表格
+function initTable() {
+    const tableBody = document.getElementById('tableBody');
+    
+    // 清空表格体（保留标题行）
+    while (tableBody.children.length > 8) {
+        tableBody.removeChild(tableBody.lastChild);
+    }
+    
+    // 添加上行站参数输入行，传入'UP'
+    UPinputParams.forEach(param => {
+        addInputRow(tableBody, param, 'UP');
+    });
+    
+    // 添加接收站参数输入行，传入'DN'
+    DNinputParams.forEach(param => {
+        addInputRow(tableBody, param, 'DN');
+    });
+    
+    // 添加载波参数输入行，传入'C'
+    CinputParams.forEach(param => {
+        addInputRow(tableBody, param, 'C');
+    });
+    
+    // 添加计算结果行（可拖拽）
+    resultParams.forEach((param, index) => {
+        addResultRow(tableBody, param, index);
+    });
+    
+    // 初始化拖拽功能
+    initDragAndDrop();
+}  
+        // 添加结果行
+        function addResultRow(tableBody, param, index) {
+            const row = document.createElement('tr');
+            row.className = 'result-area draggable';
+            row.dataset.paramId = param.id;
+            row.draggable = true;
+            
+            const nameCell = document.createElement('td');
+            nameCell.textContent = `${param.name}${param.unit ? ` (${param.unit})` : ''}`;
+            row.appendChild(nameCell);
+            
+            // 为每个链路添加结果单元格
+            for (let i = 1; i <= 8; i++) {
+                const resultCell = document.createElement('td');
+                resultCell.id = `${param.id}_result_link${i}`;
+                resultCell.textContent = '-';
+                row.appendChild(resultCell);
+            }
+            
+            // 添加到计算结果区域
+            const lastSectionTitleIndex = Array.from(tableBody.children).findIndex(
+                child => child.className.includes('section-title') && 
+                child.textContent.includes('计算结果')
+            );
+            
+            tableBody.insertBefore(row, tableBody.children[lastSectionTitleIndex + index + 1]);
+        }
+        
+        // 初始化拖拽功能
+        function initDragAndDrop() {
+            const tableBody = document.getElementById('tableBody');
+            let draggedRow = null;
+            
+            // 拖拽开始
+            tableBody.addEventListener('dragstart', (e) => {
+                if (e.target.classList.contains('draggable')) {
+                    draggedRow = e.target;
+                    e.target.classList.add('dragging');
+                    e.dataTransfer.effectAllowed = 'move';
+                    e.dataTransfer.setData('text/html', e.target.innerHTML);
+                }
+            });
+            
+            // 拖拽结束
+            tableBody.addEventListener('dragend', (e) => {
+                if (e.target.classList.contains('draggable')) {
+                    e.target.classList.remove('dragging');
+                    draggedRow = null;
+                }
+            });
+            
+            // 拖拽经过
+            tableBody.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+                
+                const targetRow = e.target.closest('tr.draggable');
+                if (!targetRow || targetRow === draggedRow) return;
+                
+                const rows = Array.from(tableBody.querySelectorAll('tr.draggable'));
+                const targetIndex = rows.indexOf(targetRow);
+                const draggedIndex = rows.indexOf(draggedRow);
+                
+                if (draggedIndex < targetIndex) {
+                    tableBody.insertBefore(draggedRow, targetRow.nextSibling);
+                } else {
+                    tableBody.insertBefore(draggedRow, targetRow);
+                }
+            });
+        }
+        
+    // 页面加载完成后初始化
+           document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                await initDB();
+                
+                // 加载缓存的文件数据
+                const cachedFiles = await getAllFilesFromDB();
+                for (const file of cachedFiles) {
+                    try {
+                        const [fullName, type] = file.fileName.split(/(EIRP|GT)(?:\..*)?$/i);
+                        const [satName, freqBand] = fullName.split(/_/).slice(0, -1);
+                        
+                        if (satName && freqBand && type) {
+                            const parsedData = parseSatelliteFile(file.content);
+                            const key = `${satName}_${freqBand}`;
+                            satelliteDataStore[type.toUpperCase()][key] = parsedData;
+                        }
+                    } catch (error) {
+                        console.error(`加载缓存文件 ${file.fileName} 失败:`, error);
+                    }
+                }
+                
+                if (cachedFiles.length > 0) {
+                    document.getElementById('fileStatus').innerHTML = 
+                        `<span style="color: #27ae60">已加载 ${cachedFiles.length} 个缓存文件</span>`;
+                }
+            } catch (error) {
+                console.error('初始化数据库或加载缓存文件失败:', error);
+            }
+            
+            // 原有初始化代码
+            initSatelliteSelector();
+            updateOrbitPosition();
+            initTable();
+            document.getElementById('calculateBtn').addEventListener('click', calculateAll);
+            loadCachedData();
+            setupAutoSave();
+            bindParamChangeEvents();
+            initCitySelectors();
+            // 加载高亮行
+    loadHighlightedRows();
+    
+    // 确保默认高亮前十行不会覆盖用户选择
+    const highlightedCount = document.querySelectorAll('tr.result-area.highlight-row').length;
+    if (highlightedCount === 0) {
+        const resultRows = document.querySelectorAll('tr.result-area');
+        const rowsToHighlight = Math.min(10, resultRows.length);
+        for (let i = 0; i < rowsToHighlight; i++) {
+            resultRows[i].classList.add('highlight-row');
+        }
+    }
+        });
+
+const style = document.createElement('style');
+style.textContent = `
+    .city-selector {
+        width: 90%;
+        padding: 4px 6px;
+        border: 1px solid #ced4da;
+        border-radius: 3px;
+        font-size: 12px;
+    }
+    .city-selector:focus {
+        outline: none;
+        border-color: #4285f4;
+        box-shadow: 0 0 0 2px rgba(66, 133, 244, 0.2);
+    }
+    .city-input {
+        width: 90%;
+        padding: 4px 6px;
+        border: 1px solid #ced4da;
+        border-radius: 3px;
+        font-size: 12px;
+    }
+    optgroup {
+        font-style: normal;
+        font-weight: bold;
+    }
+    optgroup option {
+        font-weight: normal;
+    }
+`;
+document.head.appendChild(style);
+
+document.getElementById('clearCacheBtn').addEventListener('click', async function() {
+    if (confirm('确定要清除所有缓存数据吗？')) {
+        try {
+            // 清除本地存储
+            localStorage.removeItem('satelliteParams');
+            localStorage.removeItem('linkParams');
+            localStorage.removeItem('highlightedRows'); // 新增：清除高亮行数据
+            
+            // 清除IndexedDB中的文件数据
+            if (!db) {
+                await initDB();
+            }
+            await clearFilesFromDB();
+            
+            // 清除内存中的数据
+            satelliteDataStore.EIRP = {};
+            satelliteDataStore.GT = {};
+            
+            alert('所有缓存数据已清除');
+            location.reload(); // 刷新页面以显示空表单
+        } catch (error) {
+            console.error('清除缓存失败:', error);
+            alert('清除缓存时出错: ' + error.message);
+        }
+    }
+});
+
+// 清除本地存储
+function clearLocalStorage() {
+    localStorage.removeItem('satelliteParams');
+    localStorage.removeItem('linkParams');
+    alert('本地缓存已清除');
+    location.reload(); // 刷新页面以显示空表单
+}
+
+// 设置自动保存
+function setupAutoSave() {
+    // 卫星参数变化时保存
+    document.querySelectorAll('.satellite-params input, .satellite-params select').forEach(el => {
+        el.addEventListener('change', saveSatelliteParams);
+    });
+    
+    // 链路参数变化时保存
+    document.querySelectorAll('#mainTable input, #mainTable select').forEach(el => {
+        el.addEventListener('change', saveLinkParams);
+    });
+}
+
+// 保存卫星参数
+function saveSatelliteParams() {
+    const params = {
+        name: document.getElementById('satelliteName').value,
+        position: document.getElementById('orbitPosition').value,
+        frequencyBand: document.getElementById('frequencyBand').value,
+        transponderStatus: document.getElementById('transponderStatus').value,
+        uplinkPolarization: document.getElementById('uplinkPolarization').value,
+        sfdRef: document.getElementById('sfdRef').value,
+        transponderBandwidth: document.getElementById('transponderBandwidth').value,
+        deltaTheta: document.getElementById('deltaTheta').value,
+        beamInput: document.getElementById('beamInput').value,
+        adjUplinkFactor: document.getElementById('adjUplinkFactor').value,
+adjDownlinkFactor: document.getElementById('adjDownlinkFactor').value,
+xpolUplinkFactor: document.getElementById('xpolUplinkFactor').value,
+xpolDownlinkFactor: document.getElementById('xpolDownlinkFactor').value,
+intermodFactor: document.getElementById('intermodFactor').value
+    };
+    localStorage.setItem('satelliteParams', JSON.stringify(params));
+}
+
+// 保存链路参数
+function saveLinkParams() {
+    const linkParams = {};
+    
+    // 收集所有链路参数
+    for (let linkNum = 1; linkNum <= 8; linkNum++) {
+        linkParams[`link${linkNum}`] = {};
+        
+        // 上行站参数
+        UPinputParams.forEach(param => {
+            const element = document.getElementById(`${param.id}_link${linkNum}`);
+            if (element) {
+                linkParams[`link${linkNum}`][param.id] = element.value;
+            }
+        });
+        
+        // 接收站参数
+        DNinputParams.forEach(param => {
+            const element = document.getElementById(`${param.id}_link${linkNum}`);
+            if (element) {
+                linkParams[`link${linkNum}`][param.id] = element.value;
+            }
+        });
+        
+        // 载波参数
+        CinputParams.forEach(param => {
+            const element = document.getElementById(`${param.id}_link${linkNum}`);
+            if (element) {
+                linkParams[`link${linkNum}`][param.id] = element.value;
+            }
+        });
+    }
+    
+    localStorage.setItem('linkParams', JSON.stringify(linkParams));
+}
+
+// 加载缓存数据
+function loadCachedData() {
+    // 加载卫星参数
+    const satParams = JSON.parse(localStorage.getItem('satelliteParams'));
+    if (satParams) {
+        document.getElementById('satelliteName').value = satParams.name || '';
+        document.getElementById('orbitPosition').value = satParams.position || '';
+        document.getElementById('frequencyBand').value = satParams.frequencyBand || 'Ku';
+        document.getElementById('transponderStatus').value = satParams.transponderStatus || 'single';
+        document.getElementById('uplinkPolarization').value = satParams.uplinkPolarization || 'V';
+        document.getElementById('sfdRef').value = satParams.sfdRef || '-84';
+        document.getElementById('transponderBandwidth').value = satParams.transponderBandwidth || '36';
+        document.getElementById('deltaTheta').value = satParams.deltaTheta || '3';
+       document.getElementById('adjUplinkFactor').value = satParams.adjUplinkFactor || '0';
+document.getElementById('adjDownlinkFactor').value = satParams.adjDownlinkFactor || '0';
+document.getElementById('xpolUplinkFactor').value = satParams.xpolUplinkFactor || '0';
+document.getElementById('xpolDownlinkFactor').value = satParams.xpolDownlinkFactor || '0';
+document.getElementById('intermodFactor').value = satParams.intermodFactor || '0';
+        document.getElementById('beamInput').value = satParams.beamInput || '中国波束';
+    }
+    
+    // 加载链路参数
+    const linkParams = JSON.parse(localStorage.getItem('linkParams'));
+    if (linkParams) {
+        for (let linkNum = 1; linkNum <= 8; linkNum++) {
+            const linkData = linkParams[`link${linkNum}`];
+            if (linkData) {
+                // 上行站参数
+                UPinputParams.forEach(param => {
+                    const element = document.getElementById(`${param.id}_link${linkNum}`);
+                    if (element && linkData[param.id] !== undefined) {
+                        element.value = linkData[param.id];
+                    }
+                });
+                
+                // 接收站参数
+                DNinputParams.forEach(param => {
+                    const element = document.getElementById(`${param.id}_link${linkNum}`);
+                    if (element && linkData[param.id] !== undefined) {
+                        element.value = linkData[param.id];
+                    }
+                });
+                
+                // 载波参数
+                CinputParams.forEach(param => {
+                    const element = document.getElementById(`${param.id}_link${linkNum}`);
+                    if (element && linkData[param.id] !== undefined) {
+                        element.value = linkData[param.id];
+                    }
+                });
+            }
+        }
+    }
+}
+        // 计算所有链路
+        async function calculateAll() {
+            // 禁用按钮防止重复点击
+            const calculateBtn = document.getElementById('calculateBtn');
+            calculateBtn.disabled = true;
+            calculateBtn.textContent = '计算中...';
+            
+            try {
+                // 获取卫星公共参数
+                const satParams = {
+                    name: document.getElementById('satelliteName').value,
+                    position: document.getElementById('orbitPosition').value,
+                    frequencyBand: document.getElementById('frequencyBand').value,
+                    transponderStatus: document.getElementById('transponderStatus').value,
+                    uplinkPolarization: document.getElementById('uplinkPolarization').value,
+                    sfdRef: document.getElementById('sfdRef').value,
+                    transponderBandwidth: document.getElementById('transponderBandwidth').value
+                };
+                
+                // 验证卫星参数
+                if (!validateSatelliteParams(satParams)) {
+                    throw new Error('请填写所有卫星公共参数');
+                }
+                
+                // 为每个链路计算
+                for (let linkNum = 1; linkNum <= 8; linkNum++) {
+                    await calculateLink(linkNum, satParams);
+                }
+                
+             
+            } catch (error) {
+                console.error('计算出错:', error);
+                alert('计算过程中出错: ' + error.message);
+            } finally {
+                calculateBtn.disabled = false;
+                calculateBtn.textContent = '开始计算';
+            }
+        }
+        
+        // 验证卫星参数
+        function validateSatelliteParams(params) {
+            for (const key in params) {
+                if (!params[key] || params[key].toString().trim() === '') {
+                    return false;
+                }
+            }
+            return true;
+        }
+        
+        // 计算单个链路
+        async function calculateLink(linkNum, satParams) {
+            return new Promise((resolve) => {
+                setTimeout(() => {
+                    try {
+                        // 获取当前链路的所有输入参数
+                        const inputs = {};
+                        UPinputParams.concat(DNinputParams).concat(CinputParams).forEach(param => {
+                            const inputElement = document.getElementById(`${param.id}_link${linkNum}`);
+                            if (inputElement) {
+                                inputs[param.id] = inputElement.tagName === 'SELECT' ? inputElement.value : inputElement.value;
+                            }
+                        });
+                        
+                        // 执行计算
+                        const results = performCalculations(linkNum, satParams, inputs);
+                        
+                        // 更新结果到表格
+                        resultParams.forEach(param => {
+                            const resultCell = document.getElementById(`${param.id}_result_link${linkNum}`);
+                            if (resultCell && results[param.id] !== undefined) {
+                                resultCell.textContent = results[param.id];
+                            }
+                        });
+                        
+                        resolve();
+                    } catch (error) {
+                        console.error(`链路${linkNum}计算错误:`, error);
+                        resolve();
+                    }
+                }, 100);
+            });
+        }
+        
+        // 执行实际计算
+        function performCalculations(linkNum, satParams, inputs) {
+            const results = {};
+            
+            // 基础参数
+            const satelliteName = satParams.name || "未命名卫星";
+            const frequencyBand = satParams.frequencyBand;
+            const transponderStatus = satParams.transponderStatus;
+            const uplinkPolarization = satParams.uplinkPolarization;
+            const transponderBandwidth = parseFloat(satParams.transponderBandwidth) || 36; // MHz
+            const orbitPosition = satParams.position;
+            const EIRPs = parseFloat(inputs.rxEIRP) || 45; // dBW
+            const G_Ts = parseFloat(inputs.G_Ts) || -5; // dB/K
+            
+            // 通信参数
+            const infoRate = parseFloat(inputs.infoRate) || 2048; // kbps
+            const modulation = inputs.modulation || "QPSK";
+            const fec = parseFloat(inputs.fec) || 0.75;
+            const rsCode = parseFloat(inputs.rsCode) || 1.0;
+            const bandwidthFactor = parseFloat(inputs.bandwidthFactor) || 1.4;
+            const berExponent = (parseFloat(inputs.ber) || 7) * -1;
+            const ebno = parseFloat(inputs.ebno) || 5.0; // dB
+            const margin = parseFloat(inputs.margin) || 3.0; // dB
+
+            // 地球站参数
+            const antennaDiameter = parseFloat(inputs.antennaDiameter) || 3.7; // meters
+            const uplinkAvailability = parseFloat(inputs.uplinkAvailability) || 99.90; // %
+            const rxAntennaDiameter = parseFloat(inputs.rxAntennaDiameter) || 3.7;
+            const rxLongitude = parseFloat(inputs.rxLongitude) || 0;
+            const rxLatitude = parseFloat(inputs.rxLatitude) || 0;
+            const rxAntennaEfficiency = (parseFloat(inputs.rxAntennaEfficiency) || 65) / 100;
+            const rxDownlinkAvailability = (parseFloat(inputs.rxDownlinkAvailability) || 99.90) / 100;
+            
+            // 频率与SFD计算
+let uplinkFrequency, downlinkFrequency, SFDref;
+if (frequencyBand === 'C') {
+    uplinkFrequency = 6.15;
+    downlinkFrequency = 3.95;
+    SFDref = parseFloat(satParams.sfdRef) || -90;
+} else if (frequencyBand === 'DBS') { 
+    uplinkFrequency = 17.5;
+    downlinkFrequency = 11.9;
+    SFDref = parseFloat(satParams.sfdRef) || -84;
+} else if (frequencyBand === 'ExtC') {  // 新增扩展C频段
+    uplinkFrequency = 6.545;
+    downlinkFrequency = 3.54;
+    SFDref = parseFloat(satParams.sfdRef) || -90;
+} else if (frequencyBand === 'ExtKu') {  // 新增扩展Ku频段
+    uplinkFrequency = 13.868;
+    downlinkFrequency = 11.58;
+    SFDref = parseFloat(satParams.sfdRef) || -84;
+} else { // Ku频段
+    uplinkFrequency = 14.25;
+    downlinkFrequency = 12.5;
+    SFDref = parseFloat(satParams.sfdRef) || -84;
+}
+
+            // 卫星天线每平方米增益计算
+            const wavelength = 0.3 / uplinkFrequency; // 波长单位：米
+            const antennaGain = 10 * Math.log10(4 * Math.PI / (wavelength ** 2));
+
+            // 转发器补偿参数
+            const BOi = transponderStatus === 'single' ? 1 : 6; // 输入回退
+            const BOo = transponderStatus === 'single' ? 0 : 3; // 输出补偿
+
+            // SFDs计算
+            const SFDs = SFDref - G_Ts;
+
+            // 下行极化方式
+            const downlinkPolarization = uplinkPolarization === 'C' ? 'C' : (uplinkPolarization === 'V' ? 'H' : 'V');
+
+            // 系统可用度
+            const rxdownlinkAvailability = rxDownlinkAvailability * 100;
+            const systemAvailability = (uplinkAvailability * rxDownlinkAvailability).toFixed(2); // 联合可用度
+
+            // 调制与带宽计算
+            const modulationFactors = {
+                'BPSK': 1, 'QPSK': 2, '8PSK': 3, '8QAM': 3,'16QAM': 4, '16PSK': 4
+            };
+            const modulationFactor = modulationFactors[modulation] || 1;
+            const carrierRate = infoRate / rsCode / fec; // 载波速率
+            const symbolRate = carrierRate / modulationFactor; // 符号速率
+            const allocBandwidth = Math.ceil((bandwidthFactor * symbolRate) / 10) * 10; // 分配带宽
+            
+            const earthStationLocation = inputs.earthStationLocation || "上行站";
+            const earthLat = parseFloat(inputs.latitude) || 0;
+            const earthLon = parseFloat(inputs.longitude) || 0;
+            const orbitPos = orbitPosition;
+            const earthLatRad = earthLat * Math.PI / 180;
+            
+            // 仰角计算
+            const deltaLonRad_elev = (orbitPos - earthLon) * Math.PI / 180;
+            const cosTerm_elev = Math.abs(Math.cos(earthLatRad) * Math.cos(deltaLonRad_elev));
+            const elevationRad = Math.atan(
+                (cosTerm_elev - 0.151) / 
+                Math.sqrt(1 - Math.pow(cosTerm_elev, 2))
+            );
+            const elevation = elevationRad * 180 / Math.PI;
+
+            // 方位角计算
+let azimuth;
+if (earthLat > 0) {
+    const temp = Math.abs(Math.atan(
+        Math.tan((earthLon - orbitPos) * Math.PI / 180) / 
+        Math.sin(earthLatRad)
+    ) * 180 / Math.PI);
+    azimuth = (orbitPos > earthLon) ? 180 - temp : 180 + temp;
+} else {
+    const temp = Math.abs(Math.atan(
+        Math.tan((earthLon - orbitPos) * Math.PI / 180) / 
+        Math.sin(earthLatRad)
+    ) * 180 / Math.PI);
+    azimuth = (orbitPos > earthLon) ? temp : 360 - temp;
+}
+            
+            const beamWidth = (70 * wavelength) / antennaDiameter;      
+            const antennaEfficiency = (parseFloat(inputs.antennaEfficiency) || 65) / 100; // 转换为小数
+            const txAntennaGain = 20 * Math.log10((Math.PI * antennaDiameter) / wavelength) + 10 * Math.log10(antennaEfficiency);
+            const feederLoss = parseFloat(inputs.feederLoss) || 0;
+            
+            // 发射站星地距离
+            const deltaLonRad_dist = (earthLon - orbitPos) * Math.PI / 180;
+            const cosTerm_dist = Math.cos(earthLatRad) * Math.cos(deltaLonRad_dist);
+            const slantRange = 42644 * Math.sqrt(1 - 0.2954 * cosTerm_dist);
+
+            // 上行自由空间损耗
+            const fslTerm1 = 20 * (Math.log10(uplinkFrequency) + Math.log10(slantRange * 1000));
+            const fslTerm2 = 20 * Math.log10((4 * Math.PI) / 0.3);
+            const uplinkFSL = fslTerm1 + fslTerm2;     
+            
+            // 接收站仰角/方位角计算
+            const rxDeltaLonRad = (orbitPos - rxLongitude) * Math.PI / 180;
+            const rxEarthLatRad = rxLatitude * Math.PI / 180;
+            const rxCosTerm = Math.cos(rxEarthLatRad) * Math.cos(rxDeltaLonRad);
+            const rxElevationRad = Math.atan((rxCosTerm - 0.151) / Math.sqrt(1 - Math.pow(rxCosTerm, 2)));
+            const rxElevation = rxElevationRad * 180 / Math.PI;
+            
+            //接收站方位角
+const rxDeltaLonRad_azimuth = (orbitPos - rxLongitude) * Math.PI / 180;
+
+let rxAzimuth;
+if (rxLatitude > 0) {
+    const temp = Math.abs(Math.atan(
+        Math.tan(rxDeltaLonRad_azimuth) / 
+        Math.sin(rxEarthLatRad)
+    ) * 180 / Math.PI);
+    rxAzimuth = (orbitPos > rxLongitude) ? 180 - temp : 180 + temp;
+} else {
+    const temp = Math.abs(Math.atan(
+        Math.tan(rxDeltaLonRad_azimuth) / 
+        Math.sin(rxEarthLatRad)
+    ) * 180 / Math.PI);
+    rxAzimuth = (orbitPos > rxLongitude) ? temp : 360 - temp;
+}
+
+            // 计算接收站星地距离
+            const rxDeltaLonRad_dist = (rxLongitude - orbitPos) * Math.PI / 180;
+            const rxCosTerm_dist = Math.cos(rxLatitude * Math.PI / 180) * Math.cos(rxDeltaLonRad_dist);
+            const rxSlantRange = 42644 * Math.sqrt(1 - 0.2954 * rxCosTerm_dist);
+
+            // 下行自由空间损耗（使用接收站距离）
+            const downlinkFSL = 20 * (Math.log10(downlinkFrequency) + Math.log10(rxSlantRange * 1000)) + 20 * Math.log10((4 * Math.PI) / 0.3);
+
+            // 获取上行可用度参数
+            const uplinkUnavailability = uplinkAvailability / 100; // 转换为小数形式
+            const logTerm = Math.log10((1 - uplinkUnavailability) * 100); 
+
+            // 计算指数部分
+            const exponent = -0.546 - 0.043 * logTerm;
+            const R001 = parseFloat(inputs.rainRate) || 0;
+            const altitude = (parseFloat(inputs.altitude) || 0) / 1000;
+            
+            // 计算A001（通过现有函数）
+let freqKey;
+if (frequencyBand === 'C' || frequencyBand === 'ExtC') {
+    freqKey = 6;  // 扩展C频段使用与C频段相同的系数
+} else if (frequencyBand === 'DBS') {
+    freqKey = 17; 
+} else if (frequencyBand === 'ExtKu') {
+    freqKey = 13;  // 扩展Ku上行使用13
+} else {
+    freqKey = 14;  // 普通Ku频段
+}
+
+            const A001 = calculateSinglePathRainAttenuation(
+                R001, 
+                freqKey, 
+                uplinkPolarization, 
+                earthLat,          
+                earthLon,          
+                orbitPosition,           
+                altitude
+            );
+
+            // 完整公式
+            const C0 = uplinkFrequency < 10 
+                ? 0.12 
+                : 0.12 + 0.4 * Math.log10(Math.pow(uplinkFrequency / 10, 0.8));
+            const C1 = Math.pow(0.07, C0) *  Math.pow(0.12, 1 - C0);
+            const C2 = 0.855 * C0 + 0.546 * (1 - C0);
+            const C3 = 0.139 * C0 + 0.043 * (1 - C0);
+            const uplinkRainAttenuation = (C1 * Math.pow((1 - uplinkUnavailability) * 100, -1 * (C2 + C3 * Math.log10((1 - uplinkUnavailability) * 100)))) * A001;
+            
+            // 接收天线增益（使用下行频率）
+            const rxWavelength = 0.3 / downlinkFrequency;
+            const rxAntennaGain = 20 * Math.log10((Math.PI * rxAntennaDiameter) / rxWavelength) + 10 * Math.log10(rxAntennaEfficiency);
+            const downlogTerm = Math.log10((1 - rxDownlinkAvailability) * 100);
+            const downexponent = -0.546 - 0.043 * downlogTerm;
+            
+            // 下行降雨衰减（使用接收站降雨率）
+            const rxR001 = parseFloat(inputs.rxRainRate) || 0;
+
+let downlinkFreqKey;
+if (frequencyBand === 'C' || frequencyBand === 'ExtC') {
+    downlinkFreqKey = 4;  // 扩展C频段使用与C频段相同的系数
+} else if (frequencyBand === 'DBS') {
+    downlinkFreqKey = 12; 
+} else if (frequencyBand === 'ExtKu') {
+    downlinkFreqKey = 11;  // 扩展Ku
+} else {
+    downlinkFreqKey = 12;  // 普通Ku频段
+}
+
+            const rxAltitude = (parseFloat(inputs.rxAltitude) || 0) / 1000;
+            const downlinkA001 = calculateSinglePathRainAttenuation(
+                rxR001,
+                downlinkFreqKey,
+                downlinkPolarization,
+                rxLatitude,
+                rxLongitude,
+                orbitPosition,
+                rxAltitude
+            );
+            const dC0 = downlinkFrequency < 10 
+                ? 0.12 
+                : 0.12 + 0.4 * Math.log10(Math.pow(downlinkFrequency / 10, 0.8));
+            const dC1 = Math.pow(0.07, C0) *  Math.pow(0.12, 1 - C0);
+            const dC2 = 0.855 * C0 + 0.546 * (1 - C0);
+            const dC3 = 0.139 * C0 + 0.043 * (1 - C0);
+            const downlinkRainAttenuation = (dC1 * Math.pow((1 - rxDownlinkAvailability) * 100, -1 * (dC2 + dC3 * Math.log10((1 - rxDownlinkAvailability) * 100)))) * downlinkA001;
+            
+            // 接收馈线损耗（默认0.2dB）
+            const rxFeederLoss = 0.2; 
+
+            // 根据频段获取噪声温度
+            const antennaNoiseTemp = frequencyBand === 'C' ? 30 : 35;
+            const receiverNoiseTemp = frequencyBand === 'C' ? 40 : 75;
+
+            // 降雨噪声温度
+            const rainNoiseTemp = 273.15 * (1 - 1/Math.pow(10, downlinkRainAttenuation/10));
+
+            // 接收系统等效噪声温度（K）
+            const feederLossLinear = Math.pow(10, rxFeederLoss/10);
+            const systemNoiseTempK = 
+                (antennaNoiseTemp/feederLossLinear) + 
+                290*(1 - 1/feederLossLinear) + 
+                receiverNoiseTemp;
+
+            // 接收系统等效噪声温度（dB）
+            const systemNoiseTempDb = 10 * Math.log10(systemNoiseTempK);
+
+            // 地球站G/Te
+            const gOverTe = rxAntennaGain - systemNoiseTempDb - rxFeederLoss;
+
+            // 降雨衰减引起的G/T下降
+            const numerator = systemNoiseTempK + (rainNoiseTemp/feederLossLinear);
+            const gOverTdegradation = 10 * Math.log10(numerator / systemNoiseTempK);    
+            const noiseBW = symbolRate * 1.2;
+            const theta3 = 70 * rxWavelength / rxAntennaDiameter;// 接收天线半功率波束宽度
+            const deltaTheta = parseFloat(document.getElementById('deltaTheta').value) || 3;
+              let ISO;
+    if (deltaTheta >= 1 && deltaTheta <= 20) {
+        // 范围1-20°时使用第一个公式
+        ISO = rxAntennaGain - (29 - 25 * Math.log10(deltaTheta));
+    } else {
+        // 其他范围时使用第二个公式
+        ISO = 12 * deltaTheta / theta3;
+    }
+const adjUplinkFactor = parseFloat(document.getElementById('adjUplinkFactor').value) || 0;
+const adjDownlinkFactor = parseFloat(document.getElementById('adjDownlinkFactor').value) || 0;
+const xpolUplinkFactor = parseFloat(document.getElementById('xpolUplinkFactor').value) || 0;
+const xpolDownlinkFactor = parseFloat(document.getElementById('xpolDownlinkFactor').value) || 0;
+const intermodFactor = parseFloat(document.getElementById('intermodFactor').value) || 0;
+            // 计算各项C/T值
+            const uplinkCT = SFDs - antennaGain - BOi + G_Ts;
+            const adjUplinkCT = 27.2 + 10 * Math.log10(transponderBandwidth * 1 * 1000000) - 228.6 + adjUplinkFactor;
+            const xpolUplinkCT = 27 + 10 * Math.log10(transponderBandwidth * 1 * 1000000) - 228.6 + xpolUplinkFactor;
+            const downlinkCT = EIRPs - BOo - downlinkFSL - 0.3 + gOverTe;
+            const adjDownlinkCT = ISO - 228.6 + 10 * Math.log10(transponderBandwidth * 1 * 1000000) + adjDownlinkFactor;
+            const xpolDownlinkCT = 27 + 10 * Math.log10(transponderBandwidth * 1 * 1000000) - 228.6 + xpolDownlinkFactor;
+            const intermodCT = 23 + 10 * Math.log10(transponderBandwidth * 1 * 1000000) - 228.6 + intermodFactor;
+
+            // 计算总C/T（对数运算）
+            const totalCTLinear = 1 / (
+                Math.pow(10, -uplinkCT/10) +
+                Math.pow(10, -adjUplinkCT/10) +
+                Math.pow(10, -xpolUplinkCT/10) +
+                Math.pow(10, -adjDownlinkCT/10) +
+                Math.pow(10, -xpolDownlinkCT/10) +
+                Math.pow(10, -downlinkCT/10) +
+                Math.pow(10, -intermodCT/10)
+            );
+            const totalCT = 10 * Math.log10(totalCTLinear);
+
+            // 卫星总C/T-上行降雨
+            const upcEnabled = inputs.uplinkPowerControl === '是';
+            const totalCTRain = upcEnabled ? totalCT : totalCT - uplinkRainAttenuation;
+
+            // 载波门限值C/T
+            const carrierThreshold = ebno - 228.6 + 10 * Math.log10(infoRate * 1000);
+
+            // 载波总C/T,C/N,门限C/N,链路余量
+            
+            const RXnoiseBW = 10 * Math.log10(noiseBW * 1000);
+            const carrierTotalCT = carrierThreshold + margin;
+            const carrierTotalCN = carrierTotalCT + 228.6 - RXnoiseBW;
+            const thresholdCN = ebno + 10 * Math.log10(infoRate / noiseBW);
+            const linkmargin = carrierTotalCN - thresholdCN;
+            
+            // 转发器容量-上行降雨
+            const transponderCapacity = totalCTRain - carrierTotalCT;
+
+            // 每载波占卫星EIRPs-上行降雨
+            const eirpPerCarrier = EIRPs - BOo - transponderCapacity;
+            
+            // 上行雨天
+            const uplinkPowerRatio = Math.pow(10, (eirpPerCarrier - EIRPs + BOo) / 10) * 100;
+
+            const totalInterferenceLinear = Math.pow(10, -uplinkCT/10) + 
+                                        Math.pow(10, -adjUplinkCT/10) +
+                                        Math.pow(10, -xpolUplinkCT/10) +
+                                        Math.pow(10, -adjDownlinkCT/10) +
+                                        Math.pow(10, -xpolDownlinkCT/10) +
+                                        Math.pow(10, -intermodCT/10) + 
+                                        Math.pow(10, -(downlinkCT - downlinkRainAttenuation - gOverTdegradation) / 10);
+            
+            // 下行雨卫星总C/T
+            const downlinkComponent = 10 * Math.log10(1 / totalInterferenceLinear);
+            const downlinkPowerRatio = Math.pow(10, (EIRPs - BOo - downlinkComponent + carrierTotalCT - EIRPs + BOo) / 10) * 100;
+            
+            // 转发器容量-下行降雨
+            const RXtransponderCapacity = downlinkComponent - carrierTotalCT;
+            
+            // 下行降雨-载波占有卫星有效全向辐射功率
+            const RXeirpPerCarrier = EIRPs - BOo - RXtransponderCapacity;
+            const bandwidthUsageRatio = (allocBandwidth / (transponderBandwidth * 1000)) * 100;
+            const powerUsageRatio = Math.max(uplinkPowerRatio, downlinkPowerRatio);
+            const PowerBW = powerUsageRatio * transponderBandwidth *10;
+            const paBackoff = parseFloat(inputs.paBackoff) || 0;
+
+            const uppowerTerm = 0;
+            const UPPOWER = (SFDs - BOi + uplinkFSL - antennaGain - transponderCapacity + totalCTRain - totalCT + uplinkRainAttenuation + 0.3) - txAntennaGain + feederLoss;
+            const totalInterference = 
+                Math.pow(10, -uplinkCT/10) + 
+                Math.pow(10, -adjUplinkCT/10) +
+                Math.pow(10, -xpolUplinkCT/10) + 
+                Math.pow(10, -downlinkCT/10) + 
+                Math.pow(10, -adjDownlinkCT/10) + 
+                Math.pow(10, -xpolDownlinkCT/10) + 
+                Math.pow(10, -intermodCT/10);
+
+            const interferenceTerm = 10 * Math.log10(1 / totalInterferenceLinear);
+            const DOWNPOWER = (SFDs - BOi + uplinkFSL - antennaGain - interferenceTerm + carrierTotalCT + 0.3) - txAntennaGain + feederLoss + uplinkRainAttenuation;
+
+            // 选择POWER类型
+            const selectedPower = (uplinkPowerRatio > downlinkPowerRatio) ? UPPOWER : DOWNPOWER;
+
+            // 计算功放最大输出功率
+            const paRecommendation = Math.pow(10, (selectedPower + paBackoff) / 10).toFixed(2);
+            
+            // 计算功放预算输出功率
+            const selectedPowerW = Math.pow(10, (selectedPower) / 10).toFixed(2);
+// 到达卫星的载波通量密度
+const stationEIRP = selectedPower + txAntennaGain - feederLoss;
+const PFDc = stationEIRP - 10 * Math.log10(4 * Math.PI) - 20 * Math.log10(slantRange * 1000) - BOi;
+//地球站所发功率谱密度
+const stationPSD = selectedPower - 10 * Math.log10(noiseBW * 1000);
+ // 误码率           
+const superscriptMap = {'0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹','-':'⁻'};
+
+// 在performCalculations函数中修改berResult的生成逻辑
+const berExponentStr = berExponent.toString();
+const superscriptExp = berExponentStr.split('').map(c => superscriptMap[c] || c).join('');
+            // 填充结果对象
+            results.earthAntennaDiameterResult = antennaDiameter.toFixed(2);
+            results.earthLongitudeResult = earthLon.toFixed(4);
+            results.earthLatitudeResult = earthLat.toFixed(4);
+            results.elevationResult = elevation.toFixed(2);
+            results.azimuthResult = azimuth.toFixed(2);
+            results.earthAntennaEfficiencyResult = inputs.antennaEfficiency || "65";
+            results.orbitPositionResult = orbitPosition;
+            results.EIRPsResult = EIRPs.toFixed(1);
+            results.SFDsResult = SFDs.toFixed(2);
+            results.BOiResult = BOi;
+            results.BOoResult = BOo;
+            results.uplinkFrequencyResult = uplinkFrequency.toFixed(2);
+            results.downlinkFrequencyResult = downlinkFrequency.toFixed(2);
+            results.transponderBandwidthResult = transponderBandwidth;
+            results.uplinkPolarizationResult = uplinkPolarization;
+            results.downlinkPolarizationResult = downlinkPolarization;
+            results.antennaGainResult = antennaGain.toFixed(2);
+            results.uplinkAvailabilityResult = uplinkAvailability.toFixed(2);
+            results.downlinkAvailabilityResult = rxdownlinkAvailability.toFixed(2); 
+            results.systemAvailabilityResult = systemAvailability;
+            results.infoRateResult = infoRate;
+            results.modulationResult = modulation;
+            results.modulationFactorResult = modulationFactor;
+            results.berResult = `1×10${superscriptExp}`;
+            results.ebnoResult = ebno.toFixed(2);
+            results.rsCodeResult = rsCode.toFixed(2);
+            results.fecResult = fec.toFixed(2);
+            results.carrierRateResult = carrierRate.toFixed(2);
+            results.symbolRateResult = symbolRate.toFixed(2);
+            results.allocBandwidthResult = allocBandwidth;
+            results.marginResult = margin.toFixed(2);
+            results.wavelengthResult = wavelength.toFixed(4);
+            results.beamWidthResult = beamWidth.toFixed(2);
+            results.txAntennaGainResult = txAntennaGain.toFixed(2);
+            results.feederLossResult = feederLoss.toFixed(2);
+            results.slantRangeResult = slantRange.toFixed(2);
+            results.uplinkFSLResult = uplinkFSL.toFixed(2);
+            results.uplinkRainAttenuation = uplinkRainAttenuation.toFixed(2);
+            results.rxAntennaDiameterResult = rxAntennaDiameter.toFixed(2);
+            results.rxLongitudeResult = rxLongitude.toFixed(4);
+            results.rxLatitudeResult = rxLatitude.toFixed(4);
+            results.rxElevationResult = rxElevation.toFixed(2);
+            results.rxAzimuthResult = rxAzimuth.toFixed(2);
+            results.rxAntennaEfficiencyResult = (rxAntennaEfficiency*100).toFixed(0);
+            results.rxAntennaGainResult = rxAntennaGain.toFixed(2);
+            results.rxSlantRangeResult = rxSlantRange.toFixed(2);
+            results.downlinkFSLResult = downlinkFSL.toFixed(2);
+            results.downlinkRainAttenuationResult = downlinkRainAttenuation.toFixed(2);
+            results.rainNoiseTempResult = rainNoiseTemp.toFixed(2);
+            results.rxFeederLossResult = rxFeederLoss.toFixed(1);
+            results.antennaNoiseTempResult = antennaNoiseTemp;
+            results.receiverNoiseTempResult = receiverNoiseTemp;
+            results.systemNoiseTempKResult = systemNoiseTempK.toFixed(2);
+            results.systemNoiseTempDbResult = systemNoiseTempDb.toFixed(2);
+            results.gOverTeResult = gOverTe.toFixed(2);
+            results.gOverTdegradationResult = gOverTdegradation.toFixed(2);
+            results.uplinkCTResult = uplinkCT.toFixed(2);
+            results.adjUplinkCTResult = adjUplinkCT.toFixed(2);
+            results.xpolUplinkCTResult = xpolUplinkCT.toFixed(2);
+            results.downlinkCTResult = downlinkCT.toFixed(2);
+            results.adjDownlinkCTResult = adjDownlinkCT.toFixed(2);
+            results.xpolDownlinkCTResult = xpolDownlinkCT.toFixed(2);
+            results.intermodCTResult = intermodCT.toFixed(2);
+            results.totalCTResult = totalCT.toFixed(2);
+            results.totalCTRainResult = totalCTRain.toFixed(2);
+            results.carrierThresholdCT = carrierThreshold.toFixed(2);
+            results.carrierTotalCT = carrierTotalCT.toFixed(2);
+            results.noiseBW = noiseBW.toFixed(2);
+            results.RXnoiseBW = RXnoiseBW.toFixed(2);
+            results.carrierTotalCN = carrierTotalCN.toFixed(2);
+            results.thresholdCN = thresholdCN.toFixed(2);
+            results.linkmargin = linkmargin.toFixed(2);
+            results.transponderCapacity = transponderCapacity.toFixed(2);
+            results.eirpPerCarrier = eirpPerCarrier.toFixed(2);
+            results.uplinkPowerRatioResult = uplinkPowerRatio.toFixed(2);
+            results.downlinkPowerRatioResult = downlinkPowerRatio.toFixed(2);
+            results.bandwidthUsageRatio = bandwidthUsageRatio.toFixed(2);
+            results.powerUsageRatio = powerUsageRatio.toFixed(2);
+            results.PowerBWResult = PowerBW.toFixed(2);
+            results.paRecommendation = paRecommendation;
+            results.selectedPowerResult = selectedPower.toFixed(2);
+            results.selectedPowerWResult = selectedPowerW;
+            results.RXeirpPerCarrierResult = RXeirpPerCarrier.toFixed(2);
+            results.downlinkComponentResult = downlinkComponent.toFixed(2);
+            results.RXtransponderCapacityResult = RXtransponderCapacity.toFixed(2);
+            results.stationEIRPResult = stationEIRP.toFixed(2);
+            results.PFDcResult = PFDc.toFixed(2);
+            results.stationPSDResult = stationPSD.toFixed(2);
+            return results;
+        }
+        
+
+        // 上行站降雨率估算
+        function estimateUplinkRainRate(linkNum) {
+            const lat = parseFloat(document.getElementById(`latitude_link${linkNum}`).value);
+            const lon = parseFloat(document.getElementById(`longitude_link${linkNum}`).value);
+            if (!isNaN(lat) && !isNaN(lon)) {
+                const rate = calculateRainRate(lat, lon);
+                document.getElementById(`rainRate_link${linkNum}`).value = rate;
+            }
+        }
+
+        // 接收站降雨率估算
+        function estimateDownlinkRainRate(linkNum) {
+            const lat = parseFloat(document.getElementById(`rxLatitude_link${linkNum}`).value);
+            const lon = parseFloat(document.getElementById(`rxLongitude_link${linkNum}`).value);
+            if (!isNaN(lat) && !isNaN(lon)) {
+                const rate = calculateRainRate(lat, lon);
+                document.getElementById(`rxRainRate_link${linkNum}`).value = rate;
+            }
+        }
+
+        // 通用降雨率计算逻辑
+        // 解析经纬度和降雨率数据
+        const rainData = [116.47,39.9,117.18,39.15,114.47,38.03,119.51,39.95,112.57,37.87,113.28,40.1,111.78,40.82,118.97,42.28,123.4,41.83,121.62,38.92,124.38,40.13,125.32,43.88,126.68,45.75,123.9,47.32,125.13,46.58,130.37,46.82,129.62,44.6,122.43,53.58,121.48,31.22,118.78,32.04,117.2,34.26,119.16,34.59,120.3,31.57,120.15,30.28,121.56,29.86,117.27,31.86,118.18,30.16,119.3,26.08,118.08,24.46,115.89,28.68,117,36.65,120.3,36.07,113.65,34.76,112.44,34.68,114.31,30.52,110.79,32.66,111.3,30.7,113,28.21,113.03,25.7,112.62,26.89,113.33,23.17,116.69,23.39,110.35,21.27,114.07,22.62,113.52,22.3,110.35,20.02,108.29,22.84,109.4,24.33,109.12,21.49,104.06,30.57,106.54,29.56,101.71,26.58,102.23,27.92,106.71,26.58,102.73,25.04,103.2,23.39,91.0,29.66,108.95,34.27,107.15,34.36,103.73,36.03,98.53,39.74,101.74,36.56,94.9,36.42,106.27,38.47,87.68,43.77,75.99,39.47,121.5,25.05,114.17,22.28,102.6,17.96,51.41,35.7,139.69,35.68,30,-3.42,151.2093,-33.8688,144.9631,-37.8136,120.9842,14.5995,77.2090,28.6139,72.8777,19.0760,73.0479,33.6844,55.2708,25.2048,46.6753,24.7136,37.6173,55.7558,139.692,35.689,126.98,37.57,125.75,39.03,135.50,34.69,141.35,43.06,126.52,33.50,112.33,16.83,40,45,36,50,27,25,19,47,47,50,50,40,35,27,30,34,43,20,55,53,50,55,55,55,55,53,54,63,65,57,50,55,45,43,55,45,55,53,53,70,80,73,95,85,81,95,75,72,85,40,52,37,37,55,45,37,13,36,22,15,3,10,3,23,2,2,95,95,93,18,55,53,28,22,85,50,80,60,38,18,32,48,51,50,65,40,53,87];
+
+            // 修正数据分割逻辑：每个城市包含经度、纬度、降雨率三个字段
+            const totalCities = Math.floor(rainData.length / 3);
+            const cities = [];
+            const rainRates = [];
+            for (let i = 0; i < totalCities; i++) {
+                const lon = rainData[2 * i];          // 经度
+                const lat = rainData[2 * i + 1];      // 纬度
+                const rate = rainData[2 * totalCities + i];  // 降雨率（位于数组后半部分）
+                cities.push({ lon, lat });
+                rainRates.push(rate);
+            }
+
+            // Haversine距离计算函数
+            function haversine(lat1, lon1, lat2, lon2) {
+                const R = 6371e3; // 地球半径，单位米
+                const φ1 = lat1 * Math.PI / 180;
+                const φ2 = lat2 * Math.PI / 180;
+                const Δφ = (lat2 - lat1) * Math.PI / 180;
+                const Δλ = (lon2 - lon1) * Math.PI / 180;
+
+                const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+                          Math.cos(φ1) * Math.cos(φ2) *
+                          Math.sin(Δλ/2) * Math.sin(Δλ/2);
+                const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+                return R * c;
+            }
+
+            // 更新降雨率计算逻辑
+            function calculateRainRate(lat, lon) {
+             
+                if (lat > -14 && lat < 14) {
+                    return 100;
+                }
+
+                let minDistance = Infinity;
+                let closestIndex = -1;
+                for (let i = 0; i < cities.length; i++) {
+                    const city = cities[i];
+                    const distance = haversine(lat, lon, city.lat, city.lon);
+                    if (distance < minDistance) {
+                        minDistance = distance;
+                        closestIndex = i;
+                    }
+                }
+                return closestIndex !== -1 ? rainRates[closestIndex] : 0;
+            }
+            
+            const p838Table = {
+                6: { k_H: 0.000582217, alpha_H: 1.586916682, k_V: 0.000488094, alpha_V: 1.586916682 },   // C频段上行
+                4: { k_H: 0.00014279, alpha_H: 1.352238369, k_V: 0.0002092, alpha_V: 1.211336093 },   // C频段下行
+                14: { k_H: 0.04025286, alpha_H: 1.114709104, k_V: 0.042385097, alpha_V: 1.076671696 },      // Ku上行
+                12: { k_H: 0.02403, alpha_H: 1.16692498, k_V: 0.024375695, alpha_V: 1.13649 },       // Ku下行
+                17: { k_H: 0.07045588, alpha_H: 1.0631, k_V: 0.073645, alpha_V: 1.023248061 },
+                13: { k_H: 0.0361, alpha_H: 1.12532, k_V: 0.0378, alpha_V: 1.0887762 },
+                11: { k_H: 0.020107088, alpha_H: 1.186292179, k_V: 0.02, alpha_V: 1.158356387 }
+            };
+
+            function getCoefficients(freq, pol) {
+                const entry = p838Table[freq];
+                if (pol === 'C') { // 圆极化
+                    const k_H = entry.k_H;
+                    const alpha_H = entry.alpha_H;
+                    const k_V = entry.k_V;
+                    const alpha_V = entry.alpha_V;
+                    // 公式（4）计算k
+                    const k = (k_H + k_V) / 2;
+                    // 公式（5）计算alpha
+                    const alpha = (k_H * alpha_H + k_V * alpha_V) / (2 * k);
+                    return [k, alpha];
+                }
+                return pol === 'H' 
+                    ? [entry.k_H, entry.alpha_H]
+                    : [entry.k_V, entry.alpha_V];
+            }
+            
+            // 2. 计算单路径雨衰
+            function calculateSinglePathRainAttenuation(R001, freq, pol, latitude, longitude, orbitPos, altitude) {
+                const High = altitude;
+                const earthLatRad = latitude * Math.PI / 180;
+                const deltaLonRad_elev = (orbitPos - longitude) * Math.PI / 180;
+const cosTerm_elev = Math.cos(earthLatRad) * Math.cos(deltaLonRad_elev);
+const denominator = Math.sqrt(Math.max(1e-10, 1 - Math.pow(cosTerm_elev, 2))); // 防止负数或过小值
+const elevationRad = Math.atan2(
+    cosTerm_elev - 0.151,
+    denominator
+);
+                const theta = elevationRad * 180 / Math.PI;
+                const [k, alpha] = getCoefficients(freq, pol);
+                const gamma = k * Math.pow(R001, alpha);
+                const L0 = 35 * Math.exp(-0.015 * R001);
+                let hRain = 5.25 - (latitude - 23.5) * 0.075;
+                 if (hRain > 4.9) {
+                 hRain = 4.9;
+                 }
+                const Ls = (hRain - High) / Math.sin(theta * Math.PI / 180);
+                let Lg = 1 / (0.477 * Math.pow(Ls, 0.633) * Math.pow(R001, 0.073 * alpha) * Math.pow(freq, 0.123) - 10.579 * (1 - Math.exp(-0.024 * Ls)));
+                if (Lg > 2.5) {
+                 Lg = 2.5;
+                 }
+                const Leff = Ls * Lg;
+                return gamma * Leff;
+            }
+            
+            // 卫星数据存储结构
+            const satelliteDataStore = {
+                EIRP: {},  // 结构：{ "卫星名称_频段": { points: [], gain: value } }
+                GT: {}      // 示例：GT["CHINASAT 19_C"] = { gain:40.2, points:[...] }
+            };
+
+            // 文件读取逻辑
+ document.getElementById('satDataFiles').addEventListener('change', async function(e) {
+            const files = e.target.files;
+            const statusDiv = document.getElementById('fileStatus');
+            statusDiv.innerHTML = '';
+            
+            // 确保数据库已初始化
+            if (!db) {
+                try {
+                    await initDB();
+                } catch (error) {
+                    statusDiv.innerHTML = `<span style="color: #c0392b">✗ 数据库初始化失败</span>`;
+                    return;
+                }
+            }
+            
+            for (let file of files) {
+                try {
+                    const [fullName, type] = file.name.split(/(EIRP|GT)(?:\..*)?$/i);
+                    const [satName, freqBand] = fullName.split(/_/).slice(0, -1);
+                    
+                    if (!satName || !freqBand || !type) {
+                        throw new Error(`文件名格式错误: ${file.name}`);
+                    }
+
+                    const text = await readFileAsText(file);
+                    if (!isValidText(text)) {
+                        throw new Error('文件内容非文本格式');
+                    }
+                    
+                    // 保存文件到IndexedDB
+                    await saveFileToDB(file.name, text);
+                    
+                    const parsedData = parseSatelliteFile(text);
+                    const key = `${satName}_${freqBand}`;
+                    satelliteDataStore[type.toUpperCase()][key] = parsedData;
+                    
+                    statusDiv.innerHTML += `<span style="color: #27ae60">✓ 成功加载: ${file.name}</span><br>`;
+                } catch (error) {
+                    statusDiv.innerHTML += `<span style="color: #c0392b">✗ ${file.name}: ${error.message}</span><br>`;
+                }
+            }
+            updateSatelliteParams();
+        });
+            
+            function isValidText(content) {
+                return /^[\x00-\x7F]*$/.test(content); // 仅允许ASCII字符
+            }
+            
+            // 文件读取辅助函数
+            function readFileAsText(file) {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = () => resolve(reader.result);
+                    reader.onerror = () => reject(new Error('文件读取失败'));
+                    reader.readAsText(file);
+                });
+            }
+
+            // 数据解析逻辑（兼容[B1]/p1=格式）
+            function parseSatelliteFile(text) {
+                const groups = [];
+                let currentGroup = {};
+                
+                text.split(/\r?\n/).forEach(line => {
+                    line = line.trim();
+                    if (!line) return;
+
+                    // 组标识 [B1]
+                    if (/^\[[A-Z]\d+\]$/i.test(line)) {
+                        if (currentGroup.points) groups.push(currentGroup);
+                        currentGroup = { 
+                            groupId: line.replace(/[\[\]]/g, ''),
+                            gain: null,
+                            points: []
+                        };
+                    }
+                    // gain值 gain=40.2
+                    else if (line.startsWith('gain=')) {
+                        currentGroup.gain = parseFloat(line.split('=')[1]);
+                    }
+                    // 坐标点 p1=经度;纬度
+                    else if (/^p\d+=/.test(line)) {
+                        const [lon, lat] = line.split('=')[1].split(';').map(Number);
+                        if (isNaN(lon) || isNaN(lat)) {
+                            throw new Error(`无效坐标: ${line}`);
+                        }
+                        currentGroup.points.push({ lon, lat });
+                    }
+                });
+                
+                if (currentGroup.points) groups.push(currentGroup);
+                return groups;
+            }
+
+            // 参数自动匹配逻辑
+            function updateSatelliteParams() {
+                const satName = document.getElementById('satelliteName').value;
+                const freqBand = document.getElementById('frequencyBand').value;
+                const key = `${satName}_${freqBand}`;
+
+                // 为每个链路更新参数
+                for (let linkNum = 1; linkNum <= 8; linkNum++) {
+                    // 匹配EIRP数据（接收站参数）
+                    if (satelliteDataStore.EIRP[key]) {
+                        const rxLon = parseFloat(document.getElementById(`rxLongitude_link${linkNum}`)?.value);
+                        const rxLat = parseFloat(document.getElementById(`rxLatitude_link${linkNum}`)?.value);
+                        if (!isNaN(rxLon) && !isNaN(rxLat)) {
+                            const nearest = findNearestPoint(satelliteDataStore.EIRP[key], rxLon, rxLat);
+                            if (nearest) document.getElementById(`rxEIRP_link${linkNum}`).value = nearest.gain.toFixed(2);
+                        }
+                    }
+
+                    // 匹配GT数据（上行站参数）
+                    if (satelliteDataStore.GT[key]) {
+                        const txLon = parseFloat(document.getElementById(`longitude_link${linkNum}`)?.value);
+                        const txLat = parseFloat(document.getElementById(`latitude_link${linkNum}`)?.value);
+                        if (!isNaN(txLon) && !isNaN(txLat)) {
+                            const nearest = findNearestPoint(satelliteDataStore.GT[key], txLon, txLat);
+                            if (nearest) document.getElementById(`G_Ts_link${linkNum}`).value = nearest.gain.toFixed(2);
+                        }
+                    }
+                }
+            }
+
+            // 最近点查找算法（Haversine公式）
+            function findNearestPoint(dataGroups, targetLon, targetLat) {
+                if (!dataGroups || !Array.isArray(dataGroups)) {
+                    console.error("无效数据组:", dataGroups);
+                    return null;
+                }
+
+                let minDistance = Infinity;
+                let result = null;
+
+                dataGroups.forEach(group => {
+                    if (!group.points || !group.gain) {
+                        console.warn("数据组不完整:", group);
+                        return;
+                    }
+
+                    group.points.forEach(point => {
+                        const distance = haversine(
+                            targetLat, targetLon,
+                            point.lat, point.lon
+                        );
+                        console.log(`计算距离：目标(${targetLon},${targetLat}) vs 点(${point.lon},${point.lat}) → ${distance}m`);
+
+                        if (distance < minDistance) {
+                            minDistance = distance;
+                            result = { 
+                                gain: group.gain,
+                                point: { lon: point.lon, lat: point.lat }
+                            };
+                        }
+                    });
+                });
+
+                console.log("最终匹配结果:", result);
+                return result;
+            }
+// 在autoCalculateBER函数之前添加调制技术对应的ebno衰减表
+const modulationEbnoPenalty = {
+    'BPSK': 0.3,
+    'QPSK': 0.3,
+    '8PSK': 2.8,
+    '8QAM': 2.7,
+    '16QAM': 4.1,
+    '16PSK': 4.2
+}; 
+// 自动计算误码率
+function autoCalculateBER(linkNum) {
+    const fec = parseFloat(document.getElementById(`fec_link${linkNum}`).value) || 0;
+    const rsCode = parseFloat(document.getElementById(`rsCode_link${linkNum}`).value) || 0;
+    const ebno = parseFloat(document.getElementById(`ebno_link${linkNum}`).value) || 0;
+    const modulation = document.getElementById(`modulation_link${linkNum}`).value.toUpperCase() || "QPSK";
+    
+    // 只有当三个值都有效时才计算
+    if (fec > 0 && rsCode > 0 && !isNaN(ebno)) {
+        // 获取调制技术的衰减值
+        const modulationPenalty = modulationEbnoPenalty[modulation] || 0;
+        
+        // 计算公式: (Eb/N0 + 10log10(FEC * RS) + 7 - modulationPenalty)/1.5
+        const logTerm = 10 * Math.log10(fec * rsCode);
+        const berExponent = Math.round((ebno - logTerm - 50 * Math.log10(rsCode) - modulationPenalty) / 1.2);
+        
+        // 设置误码率的值
+        document.getElementById(`ber_link${linkNum}`).value = berExponent;
+    }
+}          
+// 修改绑定参数变化事件，增加调制技术变化监听
+function bindParamChangeEvents() {
+    // 绑定卫星名称和频段变化事件
+    ['satelliteName', 'frequencyBand'].forEach(id => {
+        document.getElementById(id).addEventListener('input', updateSatelliteParams);
+    });
+
+    // 为每个链路的经纬度输入框绑定事件
+    for (let linkNum = 1; linkNum <= 8; linkNum++) {
+        ['longitude', 'latitude', 'rxLongitude', 'rxLatitude'].forEach(field => {
+            const element = document.getElementById(`${field}_link${linkNum}`);
+            if (element) {
+                element.addEventListener('input', updateSatelliteParams);
+            }
+        });
+    }
+    // 为每个链路的FEC、RS码率、Eb/N0和调制技术绑定自动计算误码率的事件
+    for (let linkNum = 1; linkNum <= 8; linkNum++) {
+        ['fec', 'rsCode', 'ebno', 'modulation'].forEach(field => {
+            const element = document.getElementById(`${field}_link${linkNum}`);
+            if (element) {
+                element.addEventListener('input', () => autoCalculateBER(linkNum));
+            }
+        });
+    }
+}
+
+// 在DOM加载完成后执行绑定
+document.addEventListener('DOMContentLoaded', () => {
+    bindParamChangeEvents(); // 替换原有的事件绑定代码
+});
+
+
+        // 添加行高亮功能
+   document.addEventListener('DOMContentLoaded', () => {
+        // 高亮前十行计算结果
+        const resultRows = document.querySelectorAll('tr.result-area');
+        const rowsToHighlight = Math.min(10, resultRows.length);
+        
+        for (let i = 0; i < rowsToHighlight; i++) {
+            resultRows[i].classList.add('highlight-row');
+        }
+
+        // 点击行高亮功能
+        const tableBody = document.getElementById('tableBody');
+        tableBody.addEventListener('click', (e) => {
+            const row = e.target.closest('tr.result-area');
+            if (row) {
+                row.classList.toggle('highlight-row');
+               saveHighlightedRows();
+            }
+        });
+    });
+    function saveHighlightedRows() {
+    const highlightedRows = Array.from(document.querySelectorAll('tr.result-area.highlight-row'))
+        .map(row => row.dataset.paramId);
+    localStorage.setItem('highlightedRows', JSON.stringify(highlightedRows));
+}
+function loadHighlightedRows() {
+    const savedRows = JSON.parse(localStorage.getItem('highlightedRows')) || [];
+    document.querySelectorAll('tr.result-area').forEach(row => {
+        if (savedRows.includes(row.dataset.paramId)) {
+            row.classList.add('highlight-row');
+        }
+    });
+}    
+        // 修改后的生成打印报告函数
+function generatePrintView() {
+    const printWindow = window.open('', '_blank');
+    const selectedLinks = Array.from(document.getElementById('linkSelector').selectedOptions)
+        .map(opt => parseInt(opt.value));
+    
+    // 获取标记的行
+    const highlightedRows = Array.from(document.querySelectorAll('tr.result-area.highlight-row'));
+    const highlightedParams = highlightedRows.map(row => row.dataset.paramId);
+    
+    // 获取卫星信息
+    const satelliteName = document.getElementById('satelliteName').value;
+    const orbitPosition = document.getElementById('orbitPosition').value;
+    const beamInput = document.getElementById('beamInput').value;
+    const frequencyBand = document.getElementById('frequencyBand').value;
+    const transponderBandwidth = document.getElementById('transponderBandwidth').value;
+    
+    // 构建报告内容
+    let reportContent = `
+        <div style="font-family: 'Microsoft YaHei', Arial, sans-serif; max-width: 100%; margin: 0; padding: 10px; font-size: 9pt;">
+            <!-- 标题部分 -->
+            <div style="display: flex; align-items: center; margin-bottom: 10px; border-bottom: 1px solid #ddd; padding-bottom: 10px;">
+                <img src="CASC.png" style="height: 1.2cm; margin-right: 15px;">
+                <div style="flex: 1;">
+                    <h1 style="color: #8B0000; font-size: 14pt; margin: 0 0 3px 0; font-weight: normal;">卫星链路预算分析报告</h1>
+                    <div style="display: flex; flex-wrap: wrap; gap: 15px; font-size: 8pt; color: #555;">
+                        <div><strong>卫星：</strong>${satelliteName} (${orbitPosition}°E)</div>
+                        <div><strong>工作频段：</strong>${frequencyBand}</div>
+                        <div><strong>波束：</strong>${beamInput}</div>
+                        <div><strong>转发器带宽：</strong>${transponderBandwidth} MHz</div>
+                    </div>
+                </div>
+                <div style="font-size: 8pt; color: #666; text-align: right;">
+                    ${new Date().toLocaleString()}<br>
+                    卫星链路计算系统 v1.4
+                </div>
+            </div>
+            
+            <!-- 链路结果部分 -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 15px; margin-top: 10px;">
+    `;
+    
+    // 为每个选中的链路添加结果
+    selectedLinks.forEach(linkNum => {
+        const uplinkStation = document.getElementById(`earthStationLocation_link${linkNum}`)?.value || "未指定上行站";
+        const downlinkStation = document.getElementById(`rxEarthStationLocation_link${linkNum}`)?.value || "未指定下行站";
+        
+        // 获取链路关键参数用于摘要
+        const infoRate = document.getElementById(`infoRate_link${linkNum}`)?.value || "-";
+        const modulation = document.getElementById(`modulation_link${linkNum}`)?.value || "-";
+        const ebno = document.getElementById(`ebno_link${linkNum}`)?.value || "-";
+        const ber = document.getElementById(`berResult_result_link${linkNum}`)?.textContent || "-";
+        const margin = document.getElementById(`linkmargin_result_link${linkNum}`)?.textContent || "-";
+        
+        reportContent += `
+            <div style="border: 1px solid #e0e0e0; border-radius: 4px; background: #f9f9f9; padding: 0; overflow: hidden;">
+                <div style="background: #2C3E50; color: white; padding: 5px 10px; font-size: 9pt;">
+                    <strong>链路${linkNum}:</strong> ${uplinkStation} → ${downlinkStation}
+                </div>
+                <div style="padding: 8px 10px; font-size: 8pt; color: #555; border-bottom: 1px dashed #e0e0e0;">
+                    <span style="margin-right: 15px;"><strong>信息速率:</strong> ${infoRate} kbps</span>
+                    <span style="margin-right: 15px;"><strong>调制技术:</strong> ${modulation}</span>
+                    <span style="margin-right: 15px;"><strong>Eb/N₀:</strong> ${ebno} dB</span> 
+                     <span style="margin-right: 15px;"><strong>误码率:</strong> ${ber}</span>                  
+                    <span><strong>链路余量:</strong> ${margin} dB</span>
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 5px; padding: 8px;">
+        `;
+        
+        // 只添加标记的参数，按两列布局
+        highlightedParams.forEach((paramId, index) => {
+            const param = resultParams.find(p => p.id === paramId);
+            if (param) {
+                const resultCell = document.getElementById(`${paramId}_result_link${linkNum}`);
+                if (resultCell && resultCell.textContent !== '-') {
+                    reportContent += `
+                        <div style="display: flex; justify-content: space-between; border-bottom: 1px dotted #eee; padding: 3px 0;">
+                            <span style="color: #555;">${param.name}:</span>
+                            <span style="font-family: 'Courier New', monospace;">${resultCell.textContent} ${param.unit || ''}</span>
+                        </div>
+                    `;
+                }
+            }
+        });
+        
+        reportContent += `
+                </div>
+            </div>
+        `;
+    });
+    
+    reportContent += `
+            </div>
+            
+            <div style="margin-top: 15px; text-align: center; font-size: 8pt; color: #888; border-top: 1px solid #eee; padding-top: 8px;">
+                计算结果由系统自动生成 • 实际可能因环境因素波动
+            </div>
+            
+<div style="display: none; position: fixed; bottom: 15px; right: 15px;">
+                <button onclick="window.print()" style="padding: 4px 10px; background: #2C3E50; color: white; border: none; border-radius: 2px; cursor: pointer; font-size: 13pt;">打印报告</button>
+                <button onclick="window.close()" style="padding: 4px 10px; background: #666; color: white; border: none; border-radius: 2px; cursor: pointer; font-size: 13pt; margin-left: 5px;">关闭并返回</button>
+            </div>
+        </div>
+        
+        <style>
+            @page {
+                size: A4;
+                margin: 1cm;
+            }
+            @media print {
+                button {
+                    display: none !important;
+                }
+                body {
+                    padding: 0;
+                    font-size: 8pt !important;
+                }
+            }
+            @media screen {
+                div[style*="display: none; position: fixed;"] {
+                    display: block !important;
+                }
+            }
+        </style>
+    `;
+    
+    printWindow.document.write(`
+        <html>
+            <head>
+                <title>${satelliteName} 卫星链路预算报告</title>
+                <meta charset="UTF-8">
+            </head>
+            <body style="margin: 0; padding: 0;">
+                ${reportContent}
+            </body>
+        </html>
+    `);
+    
+    printWindow.document.close();
+}
+
+</script>
+</body>
+</html>
