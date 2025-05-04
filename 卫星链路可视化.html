@@ -435,6 +435,39 @@
             font-size: 14px;
             display: none;
         }
+
+    .param-item {
+        margin: 10px 0;
+        display: flex;
+        align-items: center;
+    }
+    .param-item label {
+        width: 120px;
+        font-size: 14px;
+        color: #ffffff;
+    }
+    .param-item input {
+        flex: 1;
+        padding: 5px;
+        border: 1px solid #555;
+        border-radius: 4px;
+        background: rgba(255,255,255,0.1);
+        color: white;
+    }
+    .param-item button {
+        background-color: #4285f4;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        padding: 8px 12px;
+        cursor: pointer;
+        font-size: 14px;
+        margin-left: 10px;
+    }
+    .param-item button:hover {
+        background-color: #3367d6;
+    }
+
     </style>
 </head>
 <body>
@@ -499,6 +532,15 @@
                             <span class="slider"></span>
                         </label>
                     </div>
+                   <div class="param-item">
+    <label for="orbitRadius">轨道半径 (km):</label>
+    <input type="number" id="orbitRadius" value="20000" min="1000" max="40000">
+</div>
+<div class="param-item">
+    <label for="orbitInclination">轨道倾角 (°):</label>
+    <input type="number" id="orbitInclination" value="45" min="0" max="90">
+</div>
+<button id="updateOrbitBtn">更新轨道</button>
                 </div>
             </div>
             
@@ -661,20 +703,7 @@
                 </div>
             </div>
             
-            <div class="panel-section">
-                <h4>计算结果</h4>
-                <div id="calculation-results">
-                    <div><span class="link-quality-indicator" id="ebno-indicator"></span>Eb/N₀: <span id="ebno">0</span> dB</div>
-                    <div>误码率: <span id="ber">0</span></div>
-                    <div><span class="link-quality-indicator" id="margin-indicator"></span>链路余量: <span id="margin">0</span> dB</div>
-                    <div>上行C/N: <span id="cnr-up">0</span> dB</div>
-                    <div>下行C/N: <span id="cnr-down">0</span> dB</div>
-                    <div>总C/N: <span id="cnr-total">0</span> dB</div>
-                </div>
-                <button id="calculateBtn">计算链路预算</button>
-                <button id="reportBtn" class="report-button">生成链路报告</button>
-            </div>
-        </div>
+            
 
         <!-- 面板切换按钮 -->
         <div id="toggle-panel-button">
@@ -691,9 +720,7 @@
             <button id="quick-reset" title="重置视角">
                 <i class="fas fa-home"></i>
             </button>
-            <button id="quick-report" title="生成报告">
-                <i class="fas fa-file-alt"></i>
-            </button>
+            
         </div>
         
         <!-- 拖动提示信息 -->
@@ -1296,209 +1323,43 @@
                 marginIndicator.className = 'link-quality-indicator link-quality-poor';
             }
         }
-        
-        // 生成打印报告的函数
-        function generatePrintView() {
-            // 创建一个新窗口
-            const printWindow = window.open('', '_blank', 'width=800,height=800');
-            
-            // 获取当前卫星名称
-            const satelliteName = document.getElementById('satelliteSelector').value;
-            
-            // 获取链路计算结果
-            const results = {
-                ebno: document.getElementById('ebno').textContent,
-                ber: document.getElementById('ber').textContent,
-                margin: document.getElementById('margin').textContent,
-                cnrUp: document.getElementById('cnr-up').textContent,
-                cnrDown: document.getElementById('cnr-down').textContent,
-                cnrTotal: document.getElementById('cnr-total').textContent,
-                uplinkDistance: document.getElementById('uplink-distance').textContent,
-                downlinkDistance: document.getElementById('downlink-distance').textContent,
-                uplinkFsl: document.getElementById('uplink-fsl').textContent,
-                downlinkFsl: document.getElementById('downlink-fsl').textContent,
-                delay: document.getElementById('delay').textContent
-            };
-            
-            // 获取其他参数
-            const params = {
-                frequency: document.getElementById('frequencyValue').textContent,
-                bandwidth: document.getElementById('bandwidthValue').textContent,
-                txPower: document.getElementById('txPowerValue').textContent,
-                txAntenna: document.getElementById('txAntennaValue').textContent,
-                rxAntenna: document.getElementById('rxAntennaValue').textContent,
-                upLatitude: document.getElementById('upLatitudeValue').textContent,
-                upLongitude: document.getElementById('upLongitudeValue').textContent,
-                downLatitude: document.getElementById('downLatitudeValue').textContent,
-                downLongitude: document.getElementById('downLongitudeValue').textContent,
-                modulation: document.getElementById('modulationType').value,
-                fec: document.getElementById('FEC').value,
-                polarization: document.getElementById('uplinkPolarization').value
-            };
-            
-            // 构建报告内容
-            let reportContent = `
-                <div style="max-width: 800px; margin: 0 auto; padding: 20px; font-family: Arial, sans-serif;">
-                    <div style="text-align: center; margin-bottom: 20px;">
-                        <h1 style="font-size: 24pt; color: #2C3E50; margin-bottom: 5px;">
-                            ${satelliteName} 卫星链路预算报告
-                        </h1>
-                        <p style="color: #7F8C8D; font-size: 10pt;">
-                            生成时间: ${new Date().toLocaleString()}
-                        </p>
-                    </div>
-                    
-                    <div style="margin-bottom: 20px;">
-                        <div class="report-link-section">
-                            <div class="report-link-header">
-                                <h2 style="margin: 0; font-size: 14pt; color: #2980B9;">链路计算结果</h2>
-                            </div>
-                            <div style="margin: 10px 0; display: flex; flex-wrap: wrap;">
-                                <span style="margin-right: 15px;"><strong>Eb/N₀:</strong> ${results.ebno} dB</span> 
-                                <span style="margin-right: 15px;"><strong>误码率:</strong> ${results.ber}</span>                  
-                                <span><strong>链路余量:</strong> ${results.margin} dB</span>
-                            </div>
-                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 5px; padding: 8px;">
-                                <div style="display: flex; justify-content: space-between; border-bottom: 1px dotted #eee; padding: 3px 0;">
-                                    <span style="color: #555;">上行C/N:</span>
-                                    <span style="font-family: 'Courier New', monospace;">${results.cnrUp} dB</span>
-                                </div>
-                                <div style="display: flex; justify-content: space-between; border-bottom: 1px dotted #eee; padding: 3px 0;">
-                                    <span style="color: #555;">下行C/N:</span>
-                                    <span style="font-family: 'Courier New', monospace;">${results.cnrDown} dB</span>
-                                </div>
-                                <div style="display: flex; justify-content: space-between; border-bottom: 1px dotted #eee; padding: 3px 0;">
-                                    <span style="color: #555;">总C/N:</span>
-                                    <span style="font-family: 'Courier New', monospace;">${results.cnrTotal} dB</span>
-                                </div>
-                                <div style="display: flex; justify-content: space-between; border-bottom: 1px dotted #eee; padding: 3px 0;">
-                                    <span style="color: #555;">上行距离:</span>
-                                    // 生成打印报告的函数 (继续)
-    <span style="font-family: 'Courier New', monospace;">${results.uplinkDistance} km</span>
-</div>
-<div style="display: flex; justify-content: space-between; border-bottom: 1px dotted #eee; padding: 3px 0;">
-    <span style="color: #555;">下行距离:</span>
-    <span style="font-family: 'Courier New', monospace;">${results.downlinkDistance} km</span>
-</div>
-<div style="display: flex; justify-content: space-between; border-bottom: 1px dotted #eee; padding: 3px 0;">
-    <span style="color: #555;">上行自由空间损耗:</span>
-    <span style="font-family: 'Courier New', monospace;">${results.uplinkFsl} dB</span>
-</div>
-<div style="display: flex; justify-content: space-between; border-bottom: 1px dotted #eee; padding: 3px 0;">
-    <span style="color: #555;">下行自由空间损耗:</span>
-    <span style="font-family: 'Courier New', monospace;">${results.downlinkFsl} dB</span>
-</div>
-<div style="display: flex; justify-content: space-between; border-bottom: 1px dotted #eee; padding: 3px 0;">
-    <span style="color: #555;">总延迟:</span>
-    <span style="font-family: 'Courier New', monospace;">${results.delay} ms</span>
-</div>
-</div>
-</div>
+        // 创建轨道函数
+function createOrbit(radius, inclination, color) {
+    const points = [];
+    const segments = 360;
 
-<div class="report-link-section">
-<div class="report-link-header">
-    <h2 style="margin: 0; font-size: 14pt; color: #2980B9;">链路参数</h2>
-</div>
-<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 5px; padding: 8px;">
-    <div style="display: flex; justify-content: space-between; border-bottom: 1px dotted #eee; padding: 3px 0;">
-        <span style="color: #555;">卫星名称:</span>
-        <span style="font-family: 'Courier New', monospace;">${satelliteName}</span>
-    </div>
-    <div style="display: flex; justify-content: space-between; border-bottom: 1px dotted #eee; padding: 3px 0;">
-        <span style="color: #555;">频率:</span>
-        <span style="font-family: 'Courier New', monospace;">${params.frequency} GHz</span>
-    </div>
-    <div style="display: flex; justify-content: space-between; border-bottom: 1px dotted #eee; padding: 3px 0;">
-        <span style="color: #555;">带宽:</span>
-        <span style="font-family: 'Courier New', monospace;">${params.bandwidth} MHz</span>
-    </div>
-    <div style="display: flex; justify-content: space-between; border-bottom: 1px dotted #eee; padding: 3px 0;">
-        <span style="color: #555;">发射功率:</span>
-        <span style="font-family: 'Courier New', monospace;">${params.txPower} W</span>
-    </div>
-    <div style="display: flex; justify-content: space-between; border-bottom: 1px dotted #eee; padding: 3px 0;">
-        <span style="color: #555;">发射天线直径:</span>
-        <span style="font-family: 'Courier New', monospace;">${params.txAntenna} m</span>
-    </div>
-    <div style="display: flex; justify-content: space-between; border-bottom: 1px dotted #eee; padding: 3px 0;">
-        <span style="color: #555;">接收天线直径:</span>
-        <span style="font-family: 'Courier New', monospace;">${params.rxAntenna} m</span>
-    </div>
-    <div style="display: flex; justify-content: space-between; border-bottom: 1px dotted #eee; padding: 3px 0;">
-        <span style="color: #555;">上行站纬度:</span>
-        <span style="font-family: 'Courier New', monospace;">${params.upLatitude}°</span>
-    </div>
-    <div style="display: flex; justify-content: space-between; border-bottom: 1px dotted #eee; padding: 3px 0;">
-        <span style="color: #555;">上行站经度:</span>
-        <span style="font-family: 'Courier New', monospace;">${params.upLongitude}°</span>
-    </div>
-    <div style="display: flex; justify-content: space-between; border-bottom: 1px dotted #eee; padding: 3px 0;">
-        <span style="color: #555;">接收站纬度:</span>
-        <span style="font-family: 'Courier New', monospace;">${params.downLatitude}°</span>
-    </div>
-    <div style="display: flex; justify-content: space-between; border-bottom: 1px dotted #eee; padding: 3px 0;">
-        <span style="color: #555;">接收站经度:</span>
-        <span style="font-family: 'Courier New', monospace;">${params.downLongitude}°</span>
-    </div>
-    <div style="display: flex; justify-content: space-between; border-bottom: 1px dotted #eee; padding: 3px 0;">
-        <span style="color: #555;">调制方式:</span>
-        <span style="font-family: 'Courier New', monospace;">${params.modulation}</span>
-    </div>
-    <div style="display: flex; justify-content: space-between; border-bottom: 1px dotted #eee; padding: 3px 0;">
-        <span style="color: #555;">前向纠错码率:</span>
-        <span style="font-family: 'Courier New', monospace;">${params.fec}</span>
-    </div>
-    <div style="display: flex; justify-content: space-between; border-bottom: 1px dotted #eee; padding: 3px 0;">
-        <span style="color: #555;">上行极化:</span>
-        <span style="font-family: 'Courier New', monospace;">${params.polarization}</span>
-    </div>
-</div>
-</div>
-</div>
-
-<div style="margin-top: 15px; text-align: center; font-size: 8pt; color: #888; border-top: 1px solid #eee; padding-top: 8px;">
-报告生成时间: ${new Date().toLocaleString()} • 用户: ${params.user || 'piaosir'} • 仅供参考，实际结果可能因工作环境而异
-</div>
-
-<div style="display: block; position: fixed; bottom: 15px; right: 15px;">
-<button onclick="window.print()" style="padding: 4px 10px; background: #2C3E50; color: white; border: none; border-radius: 2px; cursor: pointer; font-size: 13pt;">打印报告</button>
-<button onclick="window.close()" style="padding: 4px 10px; background: #666; color: white; border: none; border-radius: 2px; cursor: pointer; font-size: 13pt; margin-left: 5px;">关闭并返回</button>
-</div>
-</div>
-
-<style>
-@page {
-    size: A4;
-    margin: 1cm;
-}
-@media print {
-    button {
-        display: none !important;
+    // 生成轨道点
+    for (let i = 0; i <= segments; i++) {
+        const theta = (i / segments) * 2 * Math.PI; // 角度转弧度
+        const x = radius * Math.cos(theta);
+        const z = radius * Math.sin(theta);
+        const y = radius * Math.sin(THREE.MathUtils.degToRad(inclination)) * Math.sin(theta);
+        points.push(new THREE.Vector3(x, y, z));
     }
-    body {
-        padding: 0;
-        font-size: 8pt !important;
+
+    // 创建轨道
+    const geometry = new THREE.BufferGeometry().setFromPoints(points);
+    const material = new THREE.LineBasicMaterial({ color: color });
+    const orbit = new THREE.Line(geometry, material);
+
+    // 将轨道添加到场景中
+    scene.add(orbit);
+    return orbit;
+}
+  function updateOrbit(orbit, radius, inclination) {
+    const points = [];
+    const segments = 360;
+
+    for (let i = 0; i <= segments; i++) {
+        const theta = (i / segments) * 2 * Math.PI;
+        const x = radius * Math.cos(theta);
+        const z = radius * Math.sin(theta);
+        const y = radius * Math.sin(THREE.MathUtils.degToRad(inclination)) * Math.sin(theta);
+        points.push(new THREE.Vector3(x, y, z));
     }
-}
-</style>
-`;
 
-// 写入报告内容到新窗口
-printWindow.document.write(`
-<html>
-    <head>
-        <title>${satelliteName} 卫星链路预算报告</title>
-        <meta charset="UTF-8">
-    </head>
-    <body style="margin: 0; padding: 0;">
-        ${reportContent}
-    </body>
-</html>
-`);
-
-// 关闭文档流
-printWindow.document.close();
-}
+    orbit.geometry.setFromPoints(points); // 更新轨道点
+}     
 
 // 创建场景对象
 const earth = createEarth();
@@ -1507,7 +1368,8 @@ const downStation = createAntenna(0xff0000, 'downlink'); // 红色接收站
 const satellite = createSatellite();
 const uplinkLine = createLinkLine(0x00ff00); // 绿色上行链路
 const downlinkLine = createLinkLine(0xff0000); // 红色下行链路
-
+// 示例卫星轨道
+const satelliteOrbit = createOrbit(20000, 45, 0x00ff00); // 半径 20000km，倾角 45°，颜色绿色
 scene.add(upStation);
 scene.add(downStation);
 scene.add(satellite);
@@ -2088,7 +1950,21 @@ function updateSatelliteInfoPosition() {
         satelliteInfo.style.display = 'none';
     }
 }
+// 轨道添加按钮事件
+document.getElementById('addOrbitBtn').addEventListener('click', () => {
+    // 获取用户输入的轨道参数
+    const radius = parseFloat(document.getElementById('orbitRadius').value);
+    const inclination = parseFloat(document.getElementById('orbitInclination').value);
 
+    // 验证用户输入
+    if (isNaN(radius) || radius <= 0 || isNaN(inclination)) {
+        alert('请输入有效的轨道参数！');
+        return;
+    }
+
+    // 调用轨道创建函数
+    createOrbit(radius, inclination, 0x00ff00); // 绿色轨道
+});
 // 主初始化函数
 function initialize() {
     // 初始位置设置
