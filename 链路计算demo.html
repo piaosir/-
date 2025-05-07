@@ -2494,9 +2494,14 @@ const superscriptExp = berExponentStr.split('').map(c => superscriptMap[c] || c)
             // 更新降雨率计算逻辑
             function calculateRainRate(lat, lon) {
              
-                if (lat > -14 && lat < 14) {
-                    return 100;
-                }
+                if (lat > -14 && lat < 14 &&
+    ((lon >= 90 && lon <= 180) ||
+        (lon >= 15 && lon <= 28) ||
+        (lon >= -70 && lon <= -50) ||
+        (lon >= -160 && lon <= -80))) {
+    return 100;
+}
+
 
                 let minDistance = Infinity;
                 let closestIndex = -1;
