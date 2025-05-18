@@ -5,14 +5,14 @@ import matplotlib.pyplot as plt
 from scipy import signal
 import datetime
 import tkinter as tk
-from tkinter import ttk
+from tkinter import ttk, messagebox
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
 import threading
 import time
-from matplotlib.widgets import RectangleSelector
 import matplotlib.colors as mcolors
 from matplotlib.ticker import AutoMinorLocator
+from matplotlib.widgets import RectangleSelector
 import platform
 import sys
 
@@ -98,27 +98,27 @@ CHINASAT_SATELLITES = [
     }
 ]
 
-def set_modern_style(root):
+def set_light_style(root):
     style = ttk.Style(root)
     style.theme_use('clam')
-    style.configure('TFrame', background='#222736')
-    style.configure('TLabel', background='#222736', foreground='#ECEFF4', font=(zh_font, 10))
-    style.configure('TButton', background='#4EADEB', foreground='#222736', font=(zh_font, 10, 'bold'), borderwidth=0, focusthickness=2, focuscolor='#4EADEB', padding=6)
-    style.map('TButton', background=[('active', '#6C5CE7')], foreground=[('active', '#ECEFF4')])
-    style.configure('TCombobox', fieldbackground='#272B3A', background='#272B3A', foreground='#ECEFF4', selectbackground='#4EADEB', font=(zh_font, 10))
-    style.configure('Horizontal.TScale', background='#222736', troughcolor='#272B3A', bordercolor='#4EADEB', sliderthickness=18)
-    style.configure('TLabelframe', background='#222736', foreground='#4EADEB', font=(zh_font, 11, 'bold'), borderwidth=2)
-    style.configure('TLabelframe.Label', background='#222736', foreground='#4EADEB', font=(zh_font, 11, 'bold'))
-    style.configure('Status.TLabel', background='#181B28', foreground='#4EADEB', font=(zh_font, 9, 'italic'))
+    style.configure('TFrame', background='#f8fafc')
+    style.configure('TLabel', background='#f8fafc', foreground='#394867', font=(zh_font, 10))
+    style.configure('TButton', background='#bedaf7', foreground='#003366', font=(zh_font, 10, 'bold'), borderwidth=0, focusthickness=2, focuscolor='#bedaf7', padding=6)
+    style.map('TButton', background=[('active', '#98c1fe')], foreground=[('active', '#003366')])
+    style.configure('TCombobox', fieldbackground='#e3e9f0', background='#e3e9f0', foreground='#003366', selectbackground='#bedaf7', font=(zh_font, 10))
+    style.configure('Horizontal.TScale', background='#f8fafc', troughcolor='#e3e9f0', bordercolor='#bedaf7', sliderthickness=18)
+    style.configure('TLabelframe', background='#f8fafc', foreground='#5e81ac', font=(zh_font, 11, 'bold'), borderwidth=2)
+    style.configure('TLabelframe.Label', background='#f8fafc', foreground='#5e81ac', font=(zh_font, 11, 'bold'))
+    style.configure('Status.TLabel', background='#e3e9f0', foreground='#bedaf7', font=(zh_font, 9, 'italic'))
     return style
 
 class SatelliteSpectrumMonitor:
     def __init__(self, root):
         self.root = root
-        set_modern_style(root)
+        set_light_style(root)
         self.root.title("中国卫通卫星频谱监测系统")
-        self.root.geometry("1480x830")
-        self.root.configure(bg="#181B28")
+        self.root.geometry("1520x900")
+        self.root.configure(bg="#f8fafc")
 
         self.current_utc = datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
         self.user = "piaosir"
@@ -134,18 +134,21 @@ class SatelliteSpectrumMonitor:
         self.rb = 1000.0     # Hz
         self.vb = 100.0      # Hz
 
-        # 默认只显示第一个载波信息
-        self.selected_carrier = self.carrier_configs[0]
-        self.carrier_data = {
-            "中心频率": f"{self.selected_carrier['freq']} MHz",
-            "带宽": f"{self.selected_carrier['bw']} MHz",
-            "功率": f"{self.selected_carrier['power']} dBm",
-            "调制方式": self.selected_carrier['modulation']
-        }
-        self.update_satellite_data()
         self.zoom_freq_min = None
         self.zoom_freq_max = None
         self.zoom_active = False
+
+        self.markers = []
+        self.rect_selector = None
+
+        self.traces = []  # 记录trace数据
+        self.traces_max = 5
+        self.peak_search_enabled = False
+        self.avg_enabled = False
+        self.avg_count = 5
+        self.avg_data = []
+        self.ylim_scale = 10   # dB/div
+        self.ref_level = -30   # dBm, 参考电平
 
         self.create_color_scheme()
         self.create_widgets()
@@ -156,22 +159,24 @@ class SatelliteSpectrumMonitor:
 
     def create_color_scheme(self):
         self.colors = {
-            "bg_dark": "#181B28",
-            "bg_panel": "#222736",
-            "panel_highlight": "#262B3A",
-            "fg_primary": "#ECEFF4",
-            "fg_secondary": "#A2AFC6",
-            "fg_muted": "#5D6B89",
-            "accent_blue": "#4EADEB",
-            "accent_cyan": "#2DE2E6",
-            "accent_purple": "#6C5CE7",
-            "accent_red": "#F64E60",
-            "accent_green": "#0ECB81",
-            "accent_orange": "#FF9931",
-            "grid": "#363C5A",
-            "spectrum": "#4EADEB",
-            "spectrum_max": "#F64E60",
-            "noise_floor": "#0ECB81"
+            "bg_light": "#f8fafc",
+            "bg_panel": "#e3e9f0",
+            "panel_highlight": "#bedaf7",
+            "fg_primary": "#394867",
+            "fg_secondary": "#5e81ac",
+            "fg_muted": "#9baec8",
+            "accent_blue": "#98c1fe",
+            "accent_cyan": "#8ecae6",
+            "accent_purple": "#9d8df1",
+            "accent_red": "#ef476f",
+            "accent_green": "#06d6a0",
+            "accent_orange": "#ffd166",
+            "grid": "#dbeafe",
+            "spectrum": "#1976d2",
+            "spectrum_max": "#ef476f",
+            "noise_floor": "#06d6a0",
+            "marker": "#d2691e",
+            "trace": "#f08080"
         }
         n_colors = 256
         colors = []
@@ -203,7 +208,8 @@ class SatelliteSpectrumMonitor:
         self.create_display_area()
 
     def create_control_panel(self):
-        title = ttk.Label(self.panel, text="中国卫通卫星频谱仪", font=(zh_font, 16, "bold"), background=self.colors["bg_panel"], foreground=self.colors["accent_blue"])
+        title = ttk.Label(self.panel, text="中国卫通卫星频谱仪", font=(zh_font, 16, "bold"),
+                          background=self.colors["bg_panel"], foreground=self.colors["accent_blue"])
         title.pack(fill="x", pady=(6, 10))
 
         user_box = ttk.Frame(self.panel, style='TFrame')
@@ -253,31 +259,49 @@ class SatelliteSpectrumMonitor:
         vb_label = ttk.Label(vb_frame, textvariable=self.vb_var, foreground=self.colors["accent_blue"], width=9, anchor="e")
         vb_label.pack(side="right", padx=(5,3))
 
-        info_box = ttk.LabelFrame(self.panel, text="当前载波信息（主载波）", style='TLabelframe')
-        info_box.pack(fill="x", pady=(18,2), padx=3)
-        self.carrier_labels = {}
-        for key, value in self.carrier_data.items():
-            row = ttk.Frame(info_box, style='TFrame')
-            row.pack(fill="x", pady=2, padx=3)
-            ttk.Label(row, text=f"{key}:", style='TLabel').pack(side="left", anchor="w")
-            label = ttk.Label(row, text=f"{value}", style='TLabel', foreground=self.colors["accent_cyan"])
-            label.pack(side="right", anchor="e")
-            self.carrier_labels[key] = label
+        # 现代频谱仪功能
+        trace_box = ttk.LabelFrame(self.panel, text="现代频谱仪功能", style='TLabelframe')
+        trace_box.pack(fill="x", pady=(14,2), padx=3)
+        ttk.Button(trace_box, text="保持当前曲线 (Trace Hold)", command=self.hold_trace).pack(fill="x", padx=4, pady=2)
+        ttk.Button(trace_box, text="清除所有曲线", command=self.clear_traces).pack(fill="x", padx=4, pady=2)
+        ttk.Checkbutton(trace_box, text="峰值搜索 (Peak Search)", command=self.toggle_peak_search, variable=tk.IntVar()).pack(fill="x", padx=4, pady=2)
+        ttk.Checkbutton(trace_box, text="平均 (Average)", command=self.toggle_avg, variable=tk.IntVar()).pack(fill="x", padx=4, pady=2)
+        ttk.Button(trace_box, text="清除所有标点", command=self.clear_markers).pack(fill="x", padx=4, pady=2)
+        ttk.Button(trace_box, text="导出当前频谱数据", command=self.export_spectrum).pack(fill="x", padx=4, pady=2)
+        ttk.Button(trace_box, text="重置最大/最小保持", command=self.reset_zoom).pack(fill="x", padx=4, pady=2)
+        ttk.Button(trace_box, text="全部重置", command=self.reset_all).pack(fill="x", padx=4, pady=2)
+
+        # Scale和Ref Level设置
+        scale_box = ttk.LabelFrame(self.panel, text="Y轴设置", style='TLabelframe')
+        scale_box.pack(fill="x", pady=(14,2), padx=3)
+        scale_frame = ttk.Frame(scale_box, style='TFrame')
+        scale_frame.pack(fill="x", pady=4, padx=4)
+        ttk.Label(scale_frame, text="Scale (dB/div):").pack(side="left")
+        self.scale_var = tk.DoubleVar(value=self.ylim_scale)
+        scale_entry = ttk.Entry(scale_frame, textvariable=self.scale_var, width=6)
+        scale_entry.pack(side="left", padx=(4,8))
+        ttk.Button(scale_frame, text="设置", command=self.set_scale).pack(side="left")
+
+        reflevel_frame = ttk.Frame(scale_box, style='TFrame')
+        reflevel_frame.pack(fill="x", pady=4, padx=4)
+        ttk.Label(reflevel_frame, text="Ref Level (dBm):").pack(side="left")
+        self.reflevel_var = tk.DoubleVar(value=self.ref_level)
+        reflevel_entry = ttk.Entry(reflevel_frame, textvariable=self.reflevel_var, width=8)
+        reflevel_entry.pack(side="left", padx=(4,8))
+        ttk.Button(reflevel_frame, text="设置", command=self.set_reflevel).pack(side="left")
 
         self.status_bar = ttk.Label(self.panel, text="系统就绪，监测中...", style="Status.TLabel", anchor="w")
         self.status_bar.pack(fill="x", pady=(20, 6), padx=3, side="bottom")
 
-    def update_satellite_data(self):
+    def update_satellite_labels(self):
         sat = self.selected_sat
+        band = sat['bands'][self.selected_band_idx]
         self.satellite_data = {
             "卫星名称": sat["name"],
             "卫星位置": sat["position"],
-            "主频段": f"{sat['bands'][self.selected_band_idx]['name']} ({sat['bands'][self.selected_band_idx]['min']}-{sat['bands'][self.selected_band_idx]['max']} {sat['bands'][self.selected_band_idx]['unit']})",
+            "主频段": f"{band['name']} ({band['min']}-{band['max']} {band['unit']})",
             "覆盖区域": sat["cover"]
         }
-
-    def update_satellite_labels(self):
-        self.update_satellite_data()
         for key, label in self.satellite_labels.items():
             label.config(text=self.satellite_data.get(key, ""))
 
@@ -289,20 +313,11 @@ class SatelliteSpectrumMonitor:
         self.current_band = self.selected_sat["bands"][self.selected_band_idx]
         self.noise_floor = self.current_band["noise_floor"]
         self.carrier_configs = self.selected_sat["carriers"]
-        self.selected_carrier = self.carrier_configs[0]
-        self.carrier_data = {
-            "中心频率": f"{self.selected_carrier['freq']} MHz",
-            "带宽": f"{self.selected_carrier['bw']} MHz",
-            "功率": f"{self.selected_carrier['power']} dBm",
-            "调制方式": self.selected_carrier['modulation']
-        }
-        self.update_satellite_labels()
-        self.update_carrier_info()
         self.reset_zoom()
         self.status_bar.config(text=f"已切换至 {self.selected_sat['name']}")
 
     def create_display_area(self):
-        self.fig = Figure(figsize=(11, 7), dpi=100, facecolor=self.colors["bg_dark"])
+        self.fig = Figure(figsize=(11, 7), dpi=100, facecolor=self.colors["bg_light"])
         self.ax_spectrum = self.fig.add_subplot(111)
         self.style_axis(self.ax_spectrum)
         self.ax_spectrum.set_title('卫星频谱（现代化模拟）', color=self.colors["accent_blue"], fontsize=14, pad=20, fontproperties=zh_font)
@@ -316,19 +331,30 @@ class SatelliteSpectrumMonitor:
         self.spectrum_line, = self.ax_spectrum.plot(x, y, color=self.colors["spectrum"], linewidth=2.5, alpha=0.93, label='实时频谱')
         self.max_hold_line, = self.ax_spectrum.plot(x, y, color=self.colors["spectrum_max"], linewidth=1.5, alpha=0.8, linestyle='--', label='最大保持')
         self.min_hold_line, = self.ax_spectrum.plot(x, y, color=self.colors["accent_green"], linewidth=1.5, alpha=0.7, linestyle=':', label='最小保持')
-        self.noise_floor_line, = self.ax_spectrum.plot([freq_min, freq_max], [self.noise_floor, self.noise_floor], color=self.colors["noise_floor"], linestyle='-.', linewidth=1.6, alpha=0.95, label='噪底电平')
-        self.ax_spectrum.set_ylim(self.noise_floor - 10, -20)
+        self.noise_floor_line, = self.ax_spectrum.plot([freq_min, freq_max], [self.noise_floor, self.noise_floor], color=self.colors["noise_floor"], linestyle='-.', linewidth=1.6, alpha=0.95, label='噪声底')
+        self.trace_lines = []
+        self.peak_marker = None
+        self.avg_line = None
+
+        self.set_ylim_by_scale()
         self.ax_spectrum.legend(loc='upper right', facecolor=self.colors["bg_panel"], edgecolor=self.colors["accent_blue"], labelcolor=self.colors["fg_primary"], fontsize=10, prop={'family': zh_font})
-        self.rb_vb_text = self.ax_spectrum.text(0.02, 0.02, f"RB: {int(self.rb)} Hz | VB: {int(self.vb)} Hz", color=self.colors["fg_secondary"], fontsize=10, ha='left', va='bottom', transform=self.ax_spectrum.transAxes, bbox=dict(boxstyle="round,pad=0.2", facecolor=self.colors["bg_panel"], edgecolor=self.colors["accent_blue"], alpha=0.85))
-        self.cursor_text = self.ax_spectrum.text(0.98, 0.02, "", color=self.colors["fg_primary"], fontsize=10, ha='right', va='bottom', transform=self.ax_spectrum.transAxes, bbox=dict(boxstyle="round,pad=0.2", facecolor=self.colors["bg_panel"], edgecolor=self.colors["accent_blue"], alpha=0.85))
+        self.rb_vb_text = self.ax_spectrum.text(0.02, 0.02, f"RB: {int(self.rb)} Hz | VB: {int(self.vb)} Hz", color=self.colors["fg_secondary"], fontsize=10, ha='left', va='bottom', transform=self.ax_spectrum.transAxes)
+        self.cursor_text = self.ax_spectrum.text(0.98, 0.02, "", color=self.colors["fg_primary"], fontsize=10, ha='right', va='bottom', transform=self.ax_spectrum.transAxes, bbox=dict(boxstyle="round,pad=0.2", facecolor="#e3e9f0", edgecolor="#98c1fe"))
         self.fig.tight_layout(rect=(0, 0, 1, 1))
         self.canvas = FigureCanvasTkAgg(self.fig, master=self.display_frame)
         self.canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True, padx=0)
         self.canvas.draw()
         self.setup_mouse_interactions()
 
+    def set_ylim_by_scale(self):
+        # Y轴范围根据参考电平和刻度自动设置
+        ref = self.ref_level
+        scale = self.ylim_scale
+        ndiv = 8
+        self.ax_spectrum.set_ylim(ref - scale * ndiv, ref)
+
     def style_axis(self, ax):
-        ax.set_facecolor(self.colors["bg_dark"])
+        ax.set_facecolor(self.colors["bg_light"])
         ax.grid(True, color=self.colors["grid"], linestyle='--', alpha=0.5)
         ax.tick_params(axis='x', colors=self.colors["fg_secondary"], labelsize=11)
         ax.tick_params(axis='y', colors=self.colors["fg_secondary"], labelsize=11)
@@ -339,9 +365,14 @@ class SatelliteSpectrumMonitor:
         ax.tick_params(which='minor', length=3, color=self.colors["grid"], width=1)
 
     def setup_mouse_interactions(self):
-        self.rect_selector = RectangleSelector(self.ax_spectrum, self.on_select, useblit=True, button=[1], minspanx=5, spancoords='pixels', interactive=True, props=dict(facecolor=self.colors["accent_cyan"], edgecolor=self.colors["accent_blue"], alpha=0.18))
         self.canvas.mpl_connect('motion_notify_event', self.on_mouse_move)
-        # 不再支持右键选择载波
+        self.canvas.mpl_connect('button_press_event', self.on_mouse_click)
+        self.canvas.mpl_connect('button_press_event', self.on_marker_click)
+        if self.rect_selector is not None:
+            self.rect_selector.set_active(False)
+        self.rect_selector = RectangleSelector(self.ax_spectrum, self.on_rect_select,
+                                               useblit=True, button=[1], minspanx=5, spancoords='pixels', interactive=True,
+                                               props=dict(facecolor=self.colors["accent_blue"], alpha=0.2, edgecolor=self.colors["accent_blue"], linestyle='-', linewidth=2))
 
     def on_mouse_move(self, event):
         if event.inaxes == self.ax_spectrum:
@@ -351,17 +382,82 @@ class SatelliteSpectrumMonitor:
                 self.cursor_text.set_text(f"频率: {cursor_freq:.3f} MHz | 电平: {cursor_power:.2f} dBm")
                 self.canvas.draw_idle()
 
-    def on_select(self, eclick, erelease):
+    def on_mouse_click(self, event):
+        if event.inaxes == self.ax_spectrum and event.button == 1 and event.dblclick:
+            self.reset_zoom()
+
+    def on_rect_select(self, eclick, erelease):
         x1, y1 = eclick.xdata, eclick.ydata
         x2, y2 = erelease.xdata, erelease.ydata
-        if x1 > x2:
-            x1, x2 = x2, x1
-        self.zoom_freq_min = x1
-        self.zoom_freq_max = x2
-        self.zoom_active = True
-        self.ax_spectrum.set_xlim(x1, x2)
+        if x1 is not None and x2 is not None:
+            if x1 > x2:
+                x1, x2 = x2, x1
+            self.zoom_freq_min = x1
+            self.zoom_freq_max = x2
+            self.zoom_active = True
+            self.ax_spectrum.set_xlim(x1, x2)
+            self.status_bar.config(text=f"放大显示区域: {x1:.1f} MHz - {x2:.1f} MHz")
+            self.canvas.draw_idle()
+
+    def on_marker_click(self, event):
+        if event.inaxes == self.ax_spectrum and event.button == 3:
+            freq = event.xdata
+            if freq is None:
+                return
+            for marker in self.markers:
+                if abs(marker['freq'] - freq) < 0.5:
+                    marker['line'].remove()
+                    marker['label'].remove()
+                    self.markers.remove(marker)
+                    self.canvas.draw_idle()
+                    self.status_bar.config(text=f"移除标点: {marker['freq']:.2f} MHz")
+                    return
+            ylim = self.ax_spectrum.get_ylim()
+            line = self.ax_spectrum.axvline(freq, color=self.colors["marker"], linestyle='--', linewidth=2)
+            label = self.ax_spectrum.text(freq, ylim[1], f"{freq:.2f} MHz", color=self.colors["marker"],
+                                         fontsize=10, ha='center', va='bottom', backgroundcolor="#fff8e1", zorder=10)
+            self.markers.append({'freq': freq, 'line': line, 'label': label})
+            self.canvas.draw_idle()
+            self.status_bar.config(text=f"添加标点: {freq:.2f} MHz")
+
+    def clear_markers(self):
+        for marker in self.markers:
+            marker['line'].remove()
+            marker['label'].remove()
+        self.markers.clear()
         self.canvas.draw_idle()
-        self.status_bar.config(text=f"放大显示区域: {x1:.1f} MHz - {x2:.1f} MHz")
+        self.status_bar.config(text="已清除所有标点")
+
+    def hold_trace(self):
+        freq, psd = self.generate_spectrum()
+        if len(self.traces) >= self.traces_max:
+            old_line = self.traces.pop(0)
+            old_line.remove()
+        line, = self.ax_spectrum.plot(freq, psd, linestyle='-', alpha=0.5, linewidth=1.5, color=self.colors["trace"], label=f'Trace {len(self.traces)+1}')
+        self.traces.append(line)
+        self.ax_spectrum.legend(loc='upper right', facecolor=self.colors["bg_panel"], edgecolor=self.colors["accent_blue"], labelcolor=self.colors["fg_primary"], fontsize=10, prop={'family': zh_font})
+        self.canvas.draw_idle()
+        self.status_bar.config(text=f"已保持曲线（Trace Hold）")
+
+    def clear_traces(self):
+        for line in self.traces:
+            line.remove()
+        self.traces.clear()
+        self.ax_spectrum.legend(loc='upper right', facecolor=self.colors["bg_panel"], edgecolor=self.colors["accent_blue"], labelcolor=self.colors["fg_primary"], fontsize=10, prop={'family': zh_font})
+        self.canvas.draw_idle()
+        self.status_bar.config(text="已清除所有曲线")
+
+    def toggle_peak_search(self):
+        self.peak_search_enabled = not self.peak_search_enabled
+        self.status_bar.config(text=f"{'启用' if self.peak_search_enabled else '关闭'}峰值搜索（Peak Search）")
+
+    def toggle_avg(self):
+        self.avg_enabled = not self.avg_enabled
+        self.status_bar.config(text=f"{'启用' if self.avg_enabled else '关闭'}平均（Average）")
+        if not self.avg_enabled and self.avg_line:
+            self.avg_line.remove()
+            self.avg_line = None
+            self.canvas.draw_idle()
 
     def update_rb(self, value):
         self.rb = float(value)
@@ -372,10 +468,6 @@ class SatelliteSpectrumMonitor:
         self.vb = float(value)
         self.vb_var.set(f"{int(self.vb)} Hz")
         self.rb_vb_text.set_text(f"RB: {int(self.rb)} Hz | VB: {int(self.vb)} Hz")
-
-    def update_carrier_info(self):
-        for key, label in self.carrier_labels.items():
-            label.config(text=self.carrier_data[key])
 
     def reset_zoom(self):
         band_info = self.current_band
@@ -388,8 +480,45 @@ class SatelliteSpectrumMonitor:
         n = 1000
         self.max_hold = np.full(n, -1e9)
         self.min_hold = np.full(n, 1e9)
+        self.set_ylim_by_scale()
         self.canvas.draw_idle()
         self.status_bar.config(text="最大/最小保持已重置")
+
+    def reset_all(self):
+        self.reset_zoom()
+        self.clear_markers()
+        self.clear_traces()
+        self.peak_search_enabled = False
+        self.avg_enabled = False
+        self.avg_data.clear()
+        self.ylim_scale = 10
+        self.ref_level = -30
+        self.scale_var.set(self.ylim_scale)
+        self.reflevel_var.set(self.ref_level)
+        self.set_ylim_by_scale()
+        self.status_bar.config(text="全部参数已重置")
+
+    def set_scale(self):
+        try:
+            value = float(self.scale_var.get())
+            if value <= 0:
+                raise ValueError("Scale必须为正数")
+            self.ylim_scale = value
+            self.set_ylim_by_scale()
+            self.canvas.draw_idle()
+            self.status_bar.config(text=f"Y轴刻度设为 {value} dB/div")
+        except Exception as e:
+            messagebox.showerror("输入错误", f"无效的Scale值: {e}")
+
+    def set_reflevel(self):
+        try:
+            value = float(self.reflevel_var.get())
+            self.ref_level = value
+            self.set_ylim_by_scale()
+            self.canvas.draw_idle()
+            self.status_bar.config(text=f"参考电平设为 {value} dBm")
+        except Exception as e:
+            messagebox.showerror("输入错误", f"无效的Ref Level: {e}")
 
     def apply_rb_vb_filtering(self, psd_db):
         rb = np.clip(self.rb, 1, 40000)
@@ -462,7 +591,25 @@ class SatelliteSpectrumMonitor:
                     self.min_hold = psd.copy()
                 else:
                     self.min_hold = np.minimum(self.min_hold, psd)
-                self.root.after(0, self.update_plots, freq, psd)
+
+                # Average
+                if self.avg_enabled:
+                    self.avg_data.append(psd)
+                    if len(self.avg_data) > self.avg_count:
+                        self.avg_data.pop(0)
+                    avg_curve = np.mean(self.avg_data, axis=0)
+                else:
+                    self.avg_data.clear()
+                    avg_curve = None
+
+                # Peak Search
+                peak_freq = peak_val = None
+                if self.peak_search_enabled:
+                    idx = np.argmax(psd)
+                    peak_freq = freq[idx]
+                    peak_val = psd[idx]
+
+                self.root.after(0, self.update_plots, freq, psd, avg_curve, peak_freq, peak_val)
                 self.current_utc = datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
                 self.time_label.config(text=f"UTC: {self.current_utc}")
                 time.sleep(0.1)
@@ -470,13 +617,45 @@ class SatelliteSpectrumMonitor:
                 print(f"更新错误: {e}")
                 time.sleep(1.0)
 
-    def update_plots(self, freq, psd):
+    def update_plots(self, freq, psd, avg_curve, peak_freq, peak_val):
         self.spectrum_line.set_data(freq, psd)
         self.max_hold_line.set_data(freq, self.max_hold)
         self.min_hold_line.set_data(freq, self.min_hold)
         self.noise_floor_line.set_data([self.current_band["min"], self.current_band["max"]], [self.noise_floor, self.noise_floor])
-        self.ax_spectrum.set_ylim(self.noise_floor - 10, max(-20, np.max(self.max_hold)+5))
+        self.set_ylim_by_scale()
+
+        # Draw traces
+        for marker in self.markers:
+            marker['line'].set_ydata([self.ax_spectrum.get_ylim()[0], self.ax_spectrum.get_ylim()[1]])
+            marker['label'].set_y(self.ax_spectrum.get_ylim()[1])
+        # Peak marker
+        if hasattr(self, 'peak_marker') and self.peak_marker:
+            self.peak_marker.remove()
+            self.peak_marker = None
+        if self.peak_search_enabled and peak_freq is not None and peak_val is not None:
+            self.peak_marker = self.ax_spectrum.plot(peak_freq, peak_val, marker="o", color=self.colors["accent_red"],
+                                                     markersize=12, markeredgecolor="white", zorder=20)[0]
+            self.ax_spectrum.text(peak_freq, peak_val, f"峰值: {peak_freq:.2f} MHz\n{peak_val:.1f} dBm",
+                                  color=self.colors["accent_red"], fontsize=10, ha='left', va='bottom', backgroundcolor="#fff8e1", zorder=21)
+        # Average
+        if hasattr(self, 'avg_line') and self.avg_line:
+            self.avg_line.remove()
+            self.avg_line = None
+        if self.avg_enabled and avg_curve is not None:
+            self.avg_line, = self.ax_spectrum.plot(freq, avg_curve, color=self.colors["accent_orange"], linestyle='-', linewidth=2, alpha=0.8, label='Average')
+        self.ax_spectrum.legend(loc='upper right', facecolor=self.colors["bg_panel"], edgecolor=self.colors["accent_blue"], labelcolor=self.colors["fg_primary"], fontsize=10, prop={'family': zh_font})
         self.canvas.draw_idle()
+
+    def export_spectrum(self):
+        freq, psd = self.generate_spectrum()
+        try:
+            import pandas as pd
+            file = f"spectrum_export_{self.selected_sat['name']}_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+            pd.DataFrame({'Frequency_MHz': freq, 'PSD_dBm': psd}).to_csv(file, index=False)
+            messagebox.showinfo("导出成功", f"频谱数据已导出至: {file}")
+            self.status_bar.config(text=f"频谱数据已导出: {file}")
+        except Exception as e:
+            messagebox.showerror("导出失败", f"导出失败: {e}")
 
     def on_closing(self):
         self.running = False
