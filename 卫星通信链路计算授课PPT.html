@@ -1,0 +1,3944 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>地球静止轨道卫星通信链路计算 - 原理、方法与软件应用</title>
+<style>
+/* ===== 全局样式 ===== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --primary: #1a237e;
+  --primary-light: #283593;
+  --primary-dark: #0d1442;
+  --accent: #ffc107;
+  --accent2: #00bcd4;
+  --text-light: #ffffff;
+  --text-dark: #212121;
+  --bg-slide: #f5f7fa;
+  --success: #4caf50;
+  --warning: #ff9800;
+  --danger: #f44336;
+}
+html, body {
+  width: 100%; height: 100%; overflow: hidden;
+  font-family: "Microsoft YaHei", "PingFang SC", "Hiragino Sans GB", "Noto Sans SC", sans-serif;
+  background: var(--primary-dark);
+}
+/* ===== 幻灯片容器 ===== */
+#presentation {
+  width: 100vw; height: 100vh; position: relative; overflow: hidden;
+}
+.slide {
+  position: absolute; top: 0; left: 0;
+  width: 100%; height: 100%;
+  display: flex; flex-direction: column;
+  opacity: 0; visibility: hidden;
+  transition: opacity 0.5s ease, transform 0.5s ease;
+  transform: translateX(30px);
+  background: var(--bg-slide);
+  padding: 0;
+}
+.slide.active {
+  opacity: 1; visibility: visible; transform: translateX(0);
+}
+.slide.prev {
+  opacity: 0; visibility: hidden; transform: translateX(-30px);
+}
+/* ===== 标题幻灯片 ===== */
+.slide.title-slide {
+  background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 50%, var(--primary-light) 100%);
+  justify-content: center; align-items: center; text-align: center; color: var(--text-light);
+}
+.slide.title-slide h1 { font-size: 2.6em; margin-bottom: 0.3em; text-shadow: 2px 2px 8px rgba(0,0,0,0.3); line-height: 1.3; }
+.slide.title-slide h2 { font-size: 1.4em; font-weight: 400; opacity: 0.9; margin-bottom: 0.5em; }
+.slide.title-slide h3 { font-size: 1.1em; font-weight: 300; opacity: 0.75; }
+.slide.title-slide .divider { width: 120px; height: 3px; background: var(--accent); margin: 20px auto; border-radius: 2px; }
+.slide.title-slide .logo-area { margin-top: 30px; font-size: 0.9em; opacity: 0.7; }
+/* ===== 节标题幻灯片 ===== */
+.slide.section-slide {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+  justify-content: center; align-items: center; text-align: center; color: var(--text-light);
+}
+.slide.section-slide .part-number { font-size: 1.2em; opacity: 0.7; margin-bottom: 10px; letter-spacing: 3px; }
+.slide.section-slide h1 { font-size: 2.8em; margin-bottom: 0.3em; }
+.slide.section-slide .section-desc { font-size: 1.1em; opacity: 0.8; max-width: 700px; line-height: 1.6; }
+.slide.section-slide .section-divider { width: 80px; height: 3px; background: var(--accent); margin: 20px auto; }
+/* ===== 内容幻灯片 ===== */
+.slide-header {
+  background: var(--primary);
+  color: var(--text-light);
+  padding: 18px 50px 14px;
+  display: flex; justify-content: space-between; align-items: center;
+  flex-shrink: 0;
+}
+.slide-header .section-tag {
+  font-size: 0.75em; opacity: 0.7; letter-spacing: 1px;
+}
+.slide-header h2 { font-size: 1.5em; font-weight: 600; }
+.slide-content {
+  flex: 1; padding: 30px 50px; overflow-y: auto;
+  display: flex; flex-direction: column; justify-content: flex-start;
+}
+.slide-content h3 {
+  color: var(--primary); font-size: 1.25em; margin: 12px 0 8px;
+  border-left: 4px solid var(--accent); padding-left: 12px;
+}
+.slide-content p, .slide-content li {
+  font-size: 1.02em; line-height: 1.7; color: #333; margin-bottom: 4px;
+}
+.slide-content ul, .slide-content ol { padding-left: 24px; margin-bottom: 10px; }
+.slide-content li { margin-bottom: 5px; }
+/* ===== 公式 ===== */
+.formula {
+  background: #e8eaf6; border-left: 4px solid var(--primary);
+  padding: 12px 18px; margin: 10px 0; border-radius: 4px;
+  font-family: "Cambria Math", "Times New Roman", serif;
+  font-size: 1.15em; color: var(--primary-dark);
+  display: block; overflow-x: auto;
+}
+.formula-inline {
+  font-family: "Cambria Math", "Times New Roman", serif;
+  color: var(--primary-dark); font-style: italic;
+}
+/* ===== 表格 ===== */
+.data-table {
+  width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 0.92em;
+}
+.data-table th {
+  background: var(--primary); color: white; padding: 10px 12px; text-align: center;
+  font-weight: 500;
+}
+.data-table td {
+  padding: 8px 12px; border: 1px solid #ddd; text-align: center;
+}
+.data-table tr:nth-child(even) { background: #f0f2f8; }
+.data-table tr:hover { background: #e3e7f5; }
+/* ===== 高亮框 ===== */
+.highlight-box {
+  background: linear-gradient(135deg, #e8eaf6, #c5cae9);
+  border-radius: 8px; padding: 16px 20px; margin: 10px 0;
+  border-left: 5px solid var(--primary);
+}
+.info-box {
+  background: #e0f7fa; border-left: 5px solid var(--accent2);
+  border-radius: 8px; padding: 14px 18px; margin: 10px 0;
+}
+.warning-box {
+  background: #fff3e0; border-left: 5px solid var(--warning);
+  border-radius: 8px; padding: 14px 18px; margin: 10px 0;
+}
+.key-point {
+  background: #fce4ec; border-left: 5px solid var(--danger);
+  border-radius: 8px; padding: 14px 18px; margin: 10px 0;
+}
+/* ===== 两栏布局 ===== */
+.two-col { display: flex; gap: 30px; }
+.two-col > div { flex: 1; }
+.three-col { display: flex; gap: 20px; }
+.three-col > div { flex: 1; }
+/* ===== 流程步骤 ===== */
+.step-list { counter-reset: step; list-style: none; padding-left: 0; }
+.step-list li { counter-increment: step; padding: 8px 0 8px 45px; position: relative; margin-bottom: 4px; }
+.step-list li::before {
+  content: counter(step);
+  position: absolute; left: 0; top: 6px;
+  width: 32px; height: 32px; border-radius: 50%;
+  background: var(--primary); color: white;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 0.9em;
+}
+/* ===== 导航控件 ===== */
+#nav-controls {
+  position: fixed; bottom: 30px; right: 30px; z-index: 1000;
+  display: flex; gap: 8px; align-items: center;
+}
+#nav-controls button {
+  width: 44px; height: 44px; border: none; border-radius: 50%;
+  background: var(--primary); color: white; font-size: 1.2em;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: background 0.3s, transform 0.2s;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+#nav-controls button:hover { background: var(--primary-light); transform: scale(1.1); }
+#slide-counter {
+  position: fixed; bottom: 36px; left: 50%; transform: translateX(-50%);
+  color: rgba(0,0,0,0.4); font-size: 0.85em; z-index: 1000;
+  background: rgba(255,255,255,0.8); padding: 4px 16px; border-radius: 20px;
+}
+/* ===== 进度条 ===== */
+#progress-bar {
+  position: fixed; bottom: 0; left: 0; height: 4px; z-index: 1001;
+  background: var(--accent); transition: width 0.4s ease;
+}
+/* ===== 提纲面板 ===== */
+#outline-panel {
+  position: fixed; top: 0; left: -360px; width: 360px; height: 100%;
+  background: var(--primary-dark); color: white; z-index: 2000;
+  transition: left 0.4s ease; overflow-y: auto; padding: 20px;
+}
+#outline-panel.open { left: 0; }
+#outline-panel h3 { margin-bottom: 15px; font-size: 1.1em; color: var(--accent); }
+#outline-panel .outline-item {
+  padding: 8px 12px; cursor: pointer; border-radius: 4px;
+  font-size: 0.85em; margin-bottom: 2px; transition: background 0.2s;
+}
+#outline-panel .outline-item:hover { background: rgba(255,255,255,0.1); }
+#outline-panel .outline-item.section { font-weight: 700; color: var(--accent); margin-top: 12px; }
+#outline-panel .outline-item.current { background: rgba(255,255,255,0.15); }
+#outline-close {
+  position: absolute; top: 10px; right: 10px; background: none;
+  border: none; color: white; font-size: 1.5em; cursor: pointer;
+}
+#outline-toggle {
+  position: fixed; top: 15px; left: 15px; z-index: 1000;
+  background: rgba(26,35,126,0.7); border: none; color: white;
+  width: 40px; height: 40px; border-radius: 8px; cursor: pointer;
+  font-size: 1.2em; display: flex; align-items: center; justify-content: center;
+  transition: background 0.3s;
+}
+#outline-toggle:hover { background: var(--primary); }
+/* ===== 打印样式 ===== */
+@media print {
+  .slide { position: relative !important; opacity: 1 !important; visibility: visible !important;
+    transform: none !important; page-break-after: always; height: auto; min-height: 100vh; }
+  #nav-controls, #progress-bar, #slide-counter, #outline-toggle, #outline-panel { display: none !important; }
+  .slide-header { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
+/* ===== 响应式 ===== */
+@media (max-width: 1024px) {
+  .slide-header h2 { font-size: 1.2em; }
+  .slide-content { padding: 20px 30px; }
+  .slide-content p, .slide-content li { font-size: 0.95em; }
+  .two-col { flex-direction: column; gap: 15px; }
+}
+/* ===== 图示样式 ===== */
+.diagram-box {
+  border: 2px solid var(--primary); border-radius: 8px;
+  padding: 12px 16px; text-align: center; background: #e8eaf6;
+  margin: 4px; font-size: 0.9em; font-weight: 600; color: var(--primary-dark);
+}
+.diagram-arrow {
+  text-align: center; font-size: 1.5em; color: var(--primary);
+  padding: 4px 0;
+}
+.diagram-flow {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  flex-wrap: wrap; margin: 10px 0;
+}
+.diagram-flow .arrow { font-size: 1.3em; color: var(--primary); }
+.diagram-flow .box {
+  background: var(--primary); color: white; padding: 8px 16px;
+  border-radius: 6px; font-size: 0.88em; font-weight: 500;
+}
+.diagram-flow .box.alt { background: var(--accent2); }
+.diagram-flow .box.highlight { background: var(--accent); color: var(--primary-dark); }
+/* 小标签 */
+.tag {
+  display: inline-block; padding: 2px 10px; border-radius: 12px;
+  font-size: 0.8em; font-weight: 600; margin: 2px;
+}
+.tag-blue { background: #e3f2fd; color: #1565c0; }
+.tag-green { background: #e8f5e9; color: #2e7d32; }
+.tag-orange { background: #fff3e0; color: #e65100; }
+.tag-red { background: #fce4ec; color: #c62828; }
+/* 居中内容 */
+.center-content { display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1; text-align: center; }
+.large-number { font-size: 3em; font-weight: 700; color: var(--primary); }
+</style>
+</head>
+<body>
+<div id="presentation">
+
+<!-- ========== Part 1: 概述 ========== -->
+<!-- Slide 1: 封面 -->
+<div class="slide title-slide" data-section="卫星通信和链路计算概述">
+  <h1>地球静止轨道卫星通信<br>链路计算</h1>
+  <div class="divider"></div>
+  <h2>原理、方法与软件应用</h2>
+  <h3>GEO Satellite Communication Link Budget<br>Principles, Methods and Software Applications</h3>
+  <div class="logo-area">
+    <p>中国卫通集团股份有限公司 | China Satcom</p>
+    <p style="margin-top:8px;">北京邮电大学 专题讲座</p>
+    <p style="margin-top:8px;font-size:0.9em;">Beijing University of Posts and Telecommunications</p>
+  </div>
+</div>
+
+<!-- Slide 2: 课程概览 -->
+<div class="slide" data-section="卫星通信和链路计算概述">
+  <div class="slide-header">
+    <span class="section-tag">PART 1 · 概述</span>
+    <h2>课程内容概览与学习目标</h2>
+  </div>
+  <div class="slide-content">
+    <div class="two-col">
+      <div>
+        <h3>课程内容（共7个部分，约2.5小时）</h3>
+        <ol>
+          <li><strong>卫星通信和链路计算概述</strong>（15分钟）</li>
+          <li><strong>链路计算核心概念</strong>（25分钟）</li>
+          <li><strong>链路计算核心架构和计算方法</strong>（30分钟）</li>
+          <li><strong>晴天链路计算</strong>（20分钟）</li>
+          <li><strong>考虑降雨衰减的链路计算</strong>（25分钟）</li>
+          <li><strong>卫星通信方案设计</strong>（20分钟）</li>
+          <li><strong>链路评估软件介绍</strong>（15分钟）</li>
+        </ol>
+      </div>
+      <div>
+        <h3>学习目标 (Learning Objectives)</h3>
+        <ul>
+          <li>理解卫星通信链路计算的<strong>基本原理</strong></li>
+          <li>掌握链路预算（Link Budget）的<strong>核心公式</strong>和推导过程</li>
+          <li>能够独立完成晴天和雨天条件下的<strong>链路计算</strong></li>
+          <li>了解不同卫星通信<strong>方案设计</strong>的特点</li>
+          <li>熟悉常用链路计算<strong>软件工具</strong></li>
+        </ul>
+        <div class="info-box" style="margin-top:15px;">
+          <strong>💡 前置知识：</strong>电磁波理论基础、通信原理、信号与系统基础
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Slide 3: 卫星通信定义与发展 -->
+<div class="slide" data-section="卫星通信和链路计算概述">
+  <div class="slide-header">
+    <span class="section-tag">PART 1 · 概述</span>
+    <h2>卫星通信系统概述 — 定义与发展历史</h2>
+  </div>
+  <div class="slide-content">
+    <h3>卫星通信的定义</h3>
+    <p>利用人造地球卫星作为中继站，转发或反射无线电波，在两个或多个地球站之间进行的通信。卫星通信本质上是一种<strong>微波中继通信</strong>。</p>
+    <h3>发展历史里程碑</h3>
+    <table class="data-table">
+      <tr><th>年份</th><th>事件</th><th>意义</th></tr>
+      <tr><td>1945</td><td>Arthur C. Clarke 提出GEO通信卫星概念</td><td>理论奠基</td></tr>
+      <tr><td>1957</td><td>苏联发射 Sputnik 1</td><td>人类首颗人造卫星</td></tr>
+      <tr><td>1962</td><td>Telstar 1 发射</td><td>首颗有源通信卫星</td></tr>
+      <tr><td>1963</td><td>Syncom 2 发射</td><td>首颗GEO通信卫星</td></tr>
+      <tr><td>1965</td><td>Intelsat I (Early Bird)</td><td>首颗商用通信卫星</td></tr>
+      <tr><td>1970</td><td>中国发射东方红一号</td><td>中国进入航天时代</td></tr>
+      <tr><td>1984</td><td>东方红二号</td><td>中国首颗GEO通信卫星</td></tr>
+      <tr><td>2017</td><td>中星16号（实践十三号）</td><td>中国首颗HTS高通量卫星</td></tr>
+      <tr><td>2020s</td><td>中星26号等Ka HTS卫星</td><td>百Gbps级高通量时代</td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- Slide 4: 卫星通信优势与局限 -->
+<div class="slide" data-section="卫星通信和链路计算概述">
+  <div class="slide-header">
+    <span class="section-tag">PART 1 · 概述</span>
+    <h2>卫星通信的优势与局限性</h2>
+  </div>
+  <div class="slide-content">
+    <div class="two-col">
+      <div>
+        <h3>✅ 优势 (Advantages)</h3>
+        <ul>
+          <li><strong>覆盖范围广：</strong>单颗GEO卫星覆盖地球表面约1/3，3颗即可实现全球覆盖（南北极除外）</li>
+          <li><strong>不受地形限制：</strong>适用于山区、海洋、沙漠等地面网络难以覆盖的区域</li>
+          <li><strong>广播/多播能力强：</strong>天然适合点对多点通信，边际成本低</li>
+          <li><strong>快速部署：</strong>地面设备安装简便，适合应急通信和灾难救援</li>
+          <li><strong>通信距离与成本无关：</strong>同一覆盖区内通信成本不随距离增加</li>
+          <li><strong>线路稳定可靠：</strong>星上设备寿命通常15年以上</li>
+        </ul>
+      </div>
+      <div>
+        <h3>⚠️ 局限性 (Limitations)</h3>
+        <ul>
+          <li><strong>传输时延大：</strong>GEO单跳时延约250ms，双跳约500ms，不适合实时交互业务</li>
+          <li><strong>信号衰减大：</strong>自由空间损耗约200dB，高频段受降雨衰减影响严重</li>
+          <li><strong>带宽和功率有限：</strong>星上资源受限于卫星载荷能力</li>
+          <li><strong>频率协调复杂：</strong>需通过ITU进行国际频率协调</li>
+          <li><strong>发射和制造成本高：</strong>卫星造价数亿至数十亿</li>
+          <li><strong>高纬度覆盖差：</strong>GEO卫星对极地区域仰角过低</li>
+        </ul>
+        <div class="warning-box" style="margin-top:10px;">
+          <strong>关键认识：</strong>链路计算的核心任务就是在卫星有限资源（功率和带宽）约束下，优化系统设计，实现可靠通信。
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Slide 5: 卫星轨道分类 -->
+<div class="slide" data-section="卫星通信和链路计算概述">
+  <div class="slide-header">
+    <span class="section-tag">PART 1 · 概述</span>
+    <h2>卫星轨道分类</h2>
+  </div>
+  <div class="slide-content">
+    <table class="data-table">
+      <tr>
+        <th>轨道类型</th><th>高度(km)</th><th>周期</th><th>时延(ms)</th><th>典型系统</th><th>特点</th>
+      </tr>
+      <tr>
+        <td><strong>GEO</strong><br>地球静止轨道</td><td>35,786</td><td>23h56m</td><td>~250</td>
+        <td>中星系列、Intelsat、SES</td><td>相对地面静止，覆盖广</td>
+      </tr>
+      <tr>
+        <td><strong>MEO</strong><br>中地球轨道</td><td>2,000~35,786</td><td>2~24h</td><td>~125</td>
+        <td>O3b/SES、GPS、北斗</td><td>时延较低，需多星组网</td>
+      </tr>
+      <tr>
+        <td><strong>LEO</strong><br>低地球轨道</td><td>200~2,000</td><td>~90min</td><td>~10-40</td>
+        <td>Starlink、OneWeb、鸿雁</td><td>低时延，需大规模星座</td>
+      </tr>
+      <tr>
+        <td><strong>HEO</strong><br>高椭圆轨道</td><td>远地点~40,000</td><td>~12h</td><td>变化</td>
+        <td>Molniya、Tundra</td><td>高纬度覆盖好</td>
+      </tr>
+    </table>
+    <div class="highlight-box" style="margin-top:15px;">
+      <strong>📌 本课程重点：GEO卫星通信链路计算</strong><br>
+      GEO轨道特点：轨道倾角0°，偏心率0，地面站天线无需跟踪（仅需初始对准）。三颗GEO卫星覆盖全球（±75°纬度），是国际通信和广播的主力轨道。
+    </div>
+  </div>
+</div>
+
+<!-- Slide 6: GEO卫星特点和应用 -->
+<div class="slide" data-section="卫星通信和链路计算概述">
+  <div class="slide-header">
+    <span class="section-tag">PART 1 · 概述</span>
+    <h2>GEO卫星的特点和应用场景</h2>
+  </div>
+  <div class="slide-content">
+    <div class="two-col">
+      <div>
+        <h3>GEO卫星关键参数</h3>
+        <ul>
+          <li>轨道高度：<strong>35,786 km</strong>（赤道上方）</li>
+          <li>轨道周期：<strong>23小时56分4秒</strong>（恒星日）</li>
+          <li>轨道速度：<strong>3.07 km/s</strong></li>
+          <li>覆盖角度：约 <strong>±8.7°</strong>（从卫星看地球）</li>
+          <li>最大单跳时延：<strong>~270 ms</strong></li>
+          <li>卫星间距：通常 <strong>2°~3°</strong>（轨道弧度）</li>
+          <li>设计寿命：<strong>15~20年</strong></li>
+        </ul>
+        <h3 style="margin-top:15px;">轨道位置保持</h3>
+        <ul>
+          <li>东西方向：±0.05°（共位卫星±0.1°）</li>
+          <li>南北方向：±0.05°</li>
+          <li>需要星上推进器定期修正</li>
+        </ul>
+      </div>
+      <div>
+        <h3>典型应用场景</h3>
+        <ul>
+          <li>🛰️ <strong>电视直播（DTH）：</strong>中星9号/9B、SES Astra</li>
+          <li>📡 <strong>VSAT企业网：</strong>金融、石油、连锁企业</li>
+          <li>🌊 <strong>海事/航空通信：</strong>Inmarsat、船载/机载</li>
+          <li>⛑️ <strong>应急通信：</strong>抗震救灾、突发事件</li>
+          <li>📶 <strong>宽带接入：</strong>农村/偏远地区互联网</li>
+          <li>🔗 <strong>干线传输：</strong>跨洋链路、骨干中继</li>
+          <li>🛡️ <strong>军事通信：</strong>战术/战略通信</li>
+        </ul>
+        <div class="info-box" style="margin-top:15px;">
+          <strong>中国卫通GEO卫星：</strong>中星6C、中星9B、中星16（Ka HTS）、中星19（Ka HTS）、中星26号等。
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Slide 7: 链路计算的意义 -->
+<div class="slide" data-section="卫星通信和链路计算概述">
+  <div class="slide-header">
+    <span class="section-tag">PART 1 · 概述</span>
+    <h2>链路计算的意义和作用</h2>
+  </div>
+  <div class="slide-content">
+    <h3>链路计算在系统设计中的地位</h3>
+    <p>链路预算（Link Budget）是卫星通信系统设计的<strong>核心环节</strong>，贯穿系统设计的全过程：</p>
+    <div class="diagram-flow" style="margin:15px 0;">
+      <div class="box">需求分析</div><span class="arrow">→</span>
+      <div class="box highlight">链路计算</div><span class="arrow">→</span>
+      <div class="box">系统方案</div><span class="arrow">→</span>
+      <div class="box">设备选型</div><span class="arrow">→</span>
+      <div class="box alt">系统部署</div>
+    </div>
+    <div class="two-col" style="margin-top:10px;">
+      <div>
+        <h3>链路预算的概念</h3>
+        <p>链路预算是对通信链路中<strong>所有增益和损耗</strong>的系统性核算，目的是确保接收端信号质量满足要求。</p>
+        <div class="formula">Link Margin = (C/N)<sub>实际</sub> − (C/N)<sub>所需</sub> ≥ 0 dB</div>
+        <p>链路余量 > 0 表示链路可用；余量越大，系统越可靠。</p>
+      </div>
+      <div>
+        <h3>链路计算的核心问题</h3>
+        <ul>
+          <li>发射多大功率？→ <strong>EIRP设计</strong></li>
+          <li>需要多大天线？→ <strong>天线增益</strong></li>
+          <li>能传多少数据？→ <strong>信息速率</strong></li>
+          <li>能否抗雨衰？→ <strong>链路可用度</strong></li>
+          <li>干扰影响多大？→ <strong>载干比C/I</strong></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Slide 8: 链路计算基本流程 -->
+<div class="slide" data-section="卫星通信和链路计算概述">
+  <div class="slide-header">
+    <span class="section-tag">PART 1 · 概述</span>
+    <h2>链路计算的基本流程</h2>
+  </div>
+  <div class="slide-content">
+    <ol class="step-list">
+      <li><strong>确定系统参数：</strong>卫星轨道位置、地球站坐标、工作频率、调制编码方式</li>
+      <li><strong>计算几何参数：</strong>仰角（Elevation）、方位角（Azimuth）、星地距离（Slant Range）</li>
+      <li><strong>计算各项损耗：</strong>自由空间损耗（FSL）、大气损耗、降雨衰减、指向损耗等</li>
+      <li><strong>计算各项增益：</strong>发射天线增益、接收天线增益</li>
+      <li><strong>计算上行链路C/N<sub>up</sub>：</strong>地球站→卫星方向</li>
+      <li><strong>计算下行链路C/N<sub>dn</sub>：</strong>卫星→地球站方向</li>
+      <li><strong>计算干扰贡献：</strong>邻星干扰C/I<sub>adj</sub>、交叉极化C/I<sub>xpol</sub>、互调C/IM</li>
+      <li><strong>合成总链路(C/N)<sub>total</sub>：</strong>综合上行、下行、干扰</li>
+      <li><strong>计算链路余量（Link Margin）：</strong>与门限比较，判断链路可用性</li>
+    </ol>
+  </div>
+</div>
+
+<!-- Slide 9: 卫星通信系统组成 -->
+<div class="slide" data-section="卫星通信和链路计算概述">
+  <div class="slide-header">
+    <span class="section-tag">PART 1 · 概述</span>
+    <h2>卫星通信系统组成</h2>
+  </div>
+  <div class="slide-content">
+    <div class="three-col">
+      <div>
+        <div class="diagram-box" style="background:#1a237e;color:white;font-size:1.1em;">🛰️ 空间段<br>Space Segment</div>
+        <ul style="margin-top:12px;font-size:0.95em;">
+          <li><strong>通信转发器：</strong>
+            <ul>
+              <li>透明转发器（弯管式）</li>
+              <li>再生/处理转发器</li>
+              <li>数字透明处理器（DTP）</li>
+            </ul>
+          </li>
+          <li><strong>天线系统：</strong>
+            <ul>
+              <li>全球波束</li>
+              <li>区域/国家波束</li>
+              <li>点波束（Spot Beam）</li>
+            </ul>
+          </li>
+          <li><strong>卫星平台：</strong>供电、姿态控制、推进、热控</li>
+        </ul>
+      </div>
+      <div>
+        <div class="diagram-box" style="background:#00796b;color:white;font-size:1.1em;">📡 地面段<br>Ground Segment</div>
+        <ul style="margin-top:12px;font-size:0.95em;">
+          <li><strong>信关站（Gateway）：</strong>
+            <ul>
+              <li>大口径天线（7~13m）</li>
+              <li>高功率功放（HPA）</li>
+              <li>低噪声接收（LNA/LNB）</li>
+            </ul>
+          </li>
+          <li><strong>用户终端：</strong>
+            <ul>
+              <li>VSAT终端（0.6~2.4m）</li>
+              <li>DTH接收（0.35~0.75m）</li>
+              <li>便携站/背负站</li>
+            </ul>
+          </li>
+          <li><strong>地面网络：</strong>与地面核心网互联</li>
+        </ul>
+      </div>
+      <div>
+        <div class="diagram-box" style="background:#e65100;color:white;font-size:1.1em;">🎛️ 控制段<br>TT&amp;C</div>
+        <ul style="margin-top:12px;font-size:0.95em;">
+          <li><strong>测控站：</strong>
+            <ul>
+              <li>遥测（Telemetry）</li>
+              <li>遥控（Telecommand）</li>
+              <li>跟踪（Tracking）</li>
+            </ul>
+          </li>
+          <li><strong>卫星控制中心：</strong>
+            <ul>
+              <li>轨道确定与维持</li>
+              <li>载荷管理</li>
+              <li>异常处置</li>
+            </ul>
+          </li>
+          <li><strong>网络管理中心（NCC/NOC）：</strong>
+            <ul>
+              <li>资源分配</li>
+              <li>性能监控</li>
+            </ul>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Slide 10: Part 1 小结 -->
+<div class="slide" data-section="卫星通信和链路计算概述">
+  <div class="slide-header">
+    <span class="section-tag">PART 1 · 概述</span>
+    <h2>Part 1 小结</h2>
+  </div>
+  <div class="slide-content">
+    <div class="highlight-box">
+      <h3 style="border:none;padding:0;margin-bottom:10px;">📋 本节要点回顾</h3>
+      <ul>
+        <li>卫星通信利用<strong>人造卫星作为空间中继站</strong>，实现远距离无线通信</li>
+        <li>GEO卫星轨道高度<strong>35,786 km</strong>，相对地面静止，是通信/广播主力轨道</li>
+        <li>卫星通信系统由<strong>空间段、地面段、控制段</strong>三部分组成</li>
+        <li>链路计算是卫星通信系统设计的<strong>核心工具</strong>，贯穿需求分析到系统部署全过程</li>
+        <li>链路预算的目标是确保<strong>链路余量（Link Margin）≥ 0</strong></li>
+      </ul>
+    </div>
+    <div class="info-box" style="margin-top:20px;">
+      <strong>🔜 接下来：</strong>Part 2 将深入讲解链路计算的核心概念，包括射频基础、功率定义、天线参数和噪声理论。
+    </div>
+  </div>
+</div>
+
+<!-- ========== Part 2: 链路计算核心概念 ========== -->
+<!-- Slide 11: Part 2 标题页 -->
+<div class="slide section-slide" data-section="链路计算核心概念">
+  <div class="part-number">PART 2</div>
+  <h1>链路计算核心概念</h1>
+  <div class="section-divider"></div>
+  <div class="section-desc">Core Concepts of Link Budget Calculation<br>射频基础 · 调制编码 · 功率概念 · 天线参数 · 噪声理论</div>
+</div>
+
+<!-- Slide 12: 频率与波长 -->
+<div class="slide" data-section="链路计算核心概念">
+  <div class="slide-header">
+    <span class="section-tag">PART 2 · 核心概念</span>
+    <h2>射频基础 — 频率与波长</h2>
+  </div>
+  <div class="slide-content">
+    <h3>频率与波长的基本关系</h3>
+    <div class="formula">c = f × λ &nbsp;&nbsp;→&nbsp;&nbsp; λ = c / f</div>
+    <p>其中：c = 3 × 10⁸ m/s（光速），f 为频率（Hz），λ 为波长（m）</p>
+    <div class="two-col" style="margin-top:15px;">
+      <div>
+        <h3>电磁波频谱与卫星通信</h3>
+        <ul>
+          <li>卫星通信主要使用<strong>微波频段</strong>（1~100 GHz）</li>
+          <li>频率越高 → 波长越短 → 天线可以越小</li>
+          <li>频率越高 → 可用带宽越大 → 但降雨衰减越严重</li>
+          <li>频率越高 → 自由空间损耗越大</li>
+        </ul>
+      </div>
+      <div>
+        <h3>常见频率对应波长</h3>
+        <table class="data-table">
+          <tr><th>频率</th><th>波长</th><th>频段</th></tr>
+          <tr><td>4 GHz</td><td>7.5 cm</td><td>C band</td></tr>
+          <tr><td>6 GHz</td><td>5.0 cm</td><td>C band</td></tr>
+          <tr><td>12 GHz</td><td>2.5 cm</td><td>Ku band</td></tr>
+          <tr><td>14 GHz</td><td>2.14 cm</td><td>Ku band</td></tr>
+          <tr><td>20 GHz</td><td>1.5 cm</td><td>Ka band</td></tr>
+          <tr><td>30 GHz</td><td>1.0 cm</td><td>Ka band</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Slide 13: 卫星通信频段 -->
+<div class="slide" data-section="链路计算核心概念">
+  <div class="slide-header">
+    <span class="section-tag">PART 2 · 核心概念</span>
+    <h2>卫星通信常用频段</h2>
+  </div>
+  <div class="slide-content">
+    <table class="data-table">
+      <tr>
+        <th>频段</th><th>上行频率<br>(GHz)</th><th>下行频率<br>(GHz)</th><th>典型带宽</th><th>特点</th><th>典型应用</th>
+      </tr>
+      <tr>
+        <td><strong>L</strong></td><td>1.6~1.66</td><td>1.5~1.56</td><td>~34 MHz</td>
+        <td>穿透性好，带宽窄</td><td>海事/航空移动通信</td>
+      </tr>
+      <tr>
+        <td><strong>S</strong></td><td>2.6~2.69</td><td>2.5~2.52</td><td>~70 MHz</td>
+        <td>适合便携终端</td><td>移动通信、导航</td>
+      </tr>
+      <tr>
+        <td><strong>C</strong></td><td>5.925~6.425</td><td>3.7~4.2</td><td>500 MHz</td>
+        <td>抗雨衰好，天线大</td><td>干线传输、VSAT</td>
+      </tr>
+      <tr>
+        <td><strong>Ku</strong></td><td>14.0~14.5</td><td>12.25~12.75</td><td>500 MHz</td>
+        <td>天线较小，雨衰中等</td><td>DTH、VSAT、SNG</td>
+      </tr>
+      <tr>
+        <td><strong>Ka</strong></td><td>27.5~30.0</td><td>17.7~20.2</td><td>2500 MHz</td>
+        <td>带宽大，雨衰严重</td><td>HTS高通量、宽带</td>
+      </tr>
+      <tr>
+        <td><strong>Q/V</strong></td><td>42.5~43.5</td><td>37.5~42.5</td><td>>3000 MHz</td>
+        <td>超大带宽，衰减极大</td><td>馈电链路、未来HTS</td>
+      </tr>
+    </table>
+    <div class="key-point" style="margin-top:10px;">
+      <strong>🔑 频段选择原则：</strong>低频段（C）→ 高可用度、大天线；高频段（Ka）→ 大带宽、小终端、但需应对雨衰。频段选择是系统设计的首要决策之一。
+    </div>
+  </div>
+</div>
+
+<!-- Slide 14: 极化方式 -->
+<div class="slide" data-section="链路计算核心概念">
+  <div class="slide-header">
+    <span class="section-tag">PART 2 · 核心概念</span>
+    <h2>极化方式 (Polarization)</h2>
+  </div>
+  <div class="slide-content">
+    <div class="two-col">
+      <div>
+        <h3>线极化 (Linear Polarization)</h3>
+        <ul>
+          <li><strong>水平极化 (H)：</strong>电场矢量水平方向</li>
+          <li><strong>垂直极化 (V)：</strong>电场矢量垂直方向</li>
+          <li>两个正交极化可实现<strong>频率复用</strong>，带宽翻倍</li>
+          <li>Ku频段广泛采用</li>
+          <li>地球站天线需精确对准极化角</li>
+        </ul>
+        <h3 style="margin-top:15px;">圆极化 (Circular Polarization)</h3>
+        <ul>
+          <li><strong>左旋圆极化 (LHCP)</strong></li>
+          <li><strong>右旋圆极化 (RHCP)</strong></li>
+          <li>C频段、L/S频段常用</li>
+          <li>对法拉第旋转不敏感</li>
+          <li>极化对准要求较低</li>
+        </ul>
+      </div>
+      <div>
+        <h3>频率复用 (Frequency Reuse)</h3>
+        <p>利用正交极化可以在相同频段上传输两路独立信号：</p>
+        <div class="diagram-box" style="margin:10px 0;">
+          频段 A (H极化) + 频段 A (V极化)<br>
+          → 总带宽 = 2 × 单极化带宽
+        </div>
+        <h3>交叉极化隔离度 (XPD)</h3>
+        <div class="formula">XPD = 10 log₁₀(P<sub>co</sub> / P<sub>cross</sub>) [dB]</div>
+        <ul>
+          <li>典型值：25~35 dB（天线XPD）</li>
+          <li>XPD越高，极化隔离越好</li>
+          <li>降雨会<strong>降低XPD</strong>（去极化效应）</li>
+          <li>XPD影响频率复用系统的干扰水平</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Slide 15: 调制方式 -->
+<div class="slide" data-section="链路计算核心概念">
+  <div class="slide-header">
+    <span class="section-tag">PART 2 · 核心概念</span>
+    <h2>基带信号处理 — 调制方式</h2>
+  </div>
+  <div class="slide-content">
+    <h3>卫星通信常用数字调制方式</h3>
+    <table class="data-table">
+      <tr>
+        <th>调制方式</th><th>每符号比特数<br>log₂(M)</th><th>频谱效率<br>(bit/s/Hz)</th>
+        <th>所需 E<sub>b</sub>/N<sub>0</sub><br>(BER=10⁻⁷)</th><th>特点</th>
+      </tr>
+      <tr><td><strong>BPSK</strong></td><td>1</td><td>~1.0</td><td>~10.5 dB</td><td>最抗噪声，效率低</td></tr>
+      <tr><td><strong>QPSK</strong></td><td>2</td><td>~2.0</td><td>~10.5 dB</td><td>卫星通信最常用</td></tr>
+      <tr><td><strong>8PSK</strong></td><td>3</td><td>~3.0</td><td>~14.0 dB</td><td>较高效率</td></tr>
+      <tr><td><strong>16APSK</strong></td><td>4</td><td>~4.0</td><td>~16.0 dB</td><td>DVB-S2高阶调制</td></tr>
+      <tr><td><strong>32APSK</strong></td><td>5</td><td>~5.0</td><td>~18.5 dB</td><td>DVB-S2最高阶</td></tr>
+    </table>
+    <div class="info-box" style="margin-top:10px;">
+      <strong>📌 关键权衡：</strong>高阶调制提高频谱效率，但需要更高的 E<sub>b</sub>/N<sub>0</sub>（即更大功率或更大天线），且对相位噪声和非线性更敏感。卫星功率有限时，通常选择低阶调制+强编码。
+    </div>
+  </div>
+</div>
+
+<!-- Slide 16: 编码与DVB标准 -->
+<div class="slide" data-section="链路计算核心概念">
+  <div class="slide-header">
+    <span class="section-tag">PART 2 · 核心概念</span>
+    <h2>编码方式与DVB-S2/S2X标准</h2>
+  </div>
+  <div class="slide-content">
+    <div class="two-col">
+      <div>
+        <h3>前向纠错编码 (FEC)</h3>
+        <ul>
+          <li><strong>卷积码 + RS码：</strong>DVB-S时代的经典级联编码</li>
+          <li><strong>Turbo码：</strong>接近Shannon极限，DVB-RCS中使用</li>
+          <li><strong>LDPC + BCH：</strong>DVB-S2/S2X标准采用，性能优异</li>
+        </ul>
+        <h3>编码率 (Code Rate, R)</h3>
+        <p>编码率 = 信息比特数 / 总编码比特数</p>
+        <table class="data-table" style="margin-top:8px;">
+          <tr><th>编码率</th><th>冗余度</th><th>编码增益</th></tr>
+          <tr><td>1/4</td><td>75%</td><td>最强纠错</td></tr>
+          <tr><td>1/2</td><td>50%</td><td>强纠错</td></tr>
+          <tr><td>3/4</td><td>25%</td><td>中等</td></tr>
+          <tr><td>9/10</td><td>10%</td><td>弱纠错</td></tr>
+        </table>
+      </div>
+      <div>
+        <h3>DVB-S2/S2X 标准</h3>
+        <ul>
+          <li><strong>DVB-S2 (EN 302 307)：</strong>2005年发布</li>
+          <li><strong>DVB-S2X：</strong>2014年扩展标准</li>
+          <li>支持 QPSK/8PSK/16APSK/32APSK</li>
+          <li>LDPC码长：16200（短帧）或 64800（长帧）</li>
+          <li>28种 MODCOD 组合（S2），更多（S2X）</li>
+          <li><strong>ACM（自适应编码调制）：</strong>根据链路条件动态调整</li>
+        </ul>
+        <h3>信息速率计算</h3>
+        <div class="formula">R<sub>b</sub> = R<sub>s</sub> × log₂(M) × R<sub>code</sub></div>
+        <p>其中：R<sub>s</sub>=符号速率, M=调制阶数, R<sub>code</sub>=编码率</p>
+        <div class="formula">R<sub>s</sub> = B<sub>occupied</sub> / (1 + α)</div>
+        <p>α 为滚降系数 (Roll-off factor)，DVB-S2 中 α = 0.35/0.25/0.20</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Slide 17: dB概念 -->
+<div class="slide" data-section="链路计算核心概念">
+  <div class="slide-header">
+    <span class="section-tag">PART 2 · 核心概念</span>
+    <h2>功率相关概念 — dB/dBm/dBW</h2>
+  </div>
+  <div class="slide-content">
+    <h3>为什么使用分贝 (dB)?</h3>
+    <p>卫星链路中信号功率变化范围极大（发射端数百瓦 → 接收端 10⁻¹² 瓦），使用对数单位可将<strong>乘除运算转化为加减运算</strong>，简化计算。</p>
+    <div class="two-col" style="margin-top:12px;">
+      <div>
+        <h3>基本定义</h3>
+        <div class="formula">dB = 10 × log₁₀(P₁/P₂) &nbsp;&nbsp;[功率比]</div>
+        <div class="formula">dBW = 10 × log₁₀(P / 1W)</div>
+        <div class="formula">dBm = 10 × log₁₀(P / 1mW)</div>
+        <div class="formula">dBW = dBm − 30</div>
+        <h3>常用换算</h3>
+        <table class="data-table">
+          <tr><th>功率 (W)</th><th>dBW</th><th>dBm</th></tr>
+          <tr><td>1000</td><td>30</td><td>60</td></tr>
+          <tr><td>100</td><td>20</td><td>50</td></tr>
+          <tr><td>10</td><td>10</td><td>40</td></tr>
+          <tr><td>1</td><td>0</td><td>30</td></tr>
+          <tr><td>0.001</td><td>−30</td><td>0</td></tr>
+        </table>
+      </div>
+      <div>
+        <h3>链路计算中的dB运算</h3>
+        <div class="highlight-box">
+          <p><strong>线性域：</strong>P<sub>recv</sub> = P<sub>t</sub> × G<sub>t</sub> × G<sub>r</sub> / L</p>
+          <p style="margin-top:8px;"><strong>dB域：</strong>P<sub>recv</sub>[dBW] = P<sub>t</sub>[dBW] + G<sub>t</sub>[dBi] + G<sub>r</sub>[dBi] − L[dB]</p>
+        </div>
+        <h3>速记技巧</h3>
+        <ul>
+          <li>×2 对应 +3 dB</li>
+          <li>×10 对应 +10 dB</li>
+          <li>×100 对应 +20 dB</li>
+          <li>÷2 对应 −3 dB</li>
+          <li>3 dB + 3 dB = 6 dB (即 ×4)</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Slide 18: EIRP和G/T -->
+<div class="slide" data-section="链路计算核心概念">
+  <div class="slide-header">
+    <span class="section-tag">PART 2 · 核心概念</span>
+    <h2>EIRP与G/T值</h2>
+  </div>
+  <div class="slide-content">
+    <div class="two-col">
+      <div>
+        <h3>EIRP — 等效全向辐射功率</h3>
+        <p><em>Equivalent Isotropically Radiated Power</em></p>
+        <div class="formula">EIRP = P<sub>t</sub> + G<sub>t</sub> − L<sub>feed</sub> &nbsp;[dBW]</div>
+        <ul>
+          <li>P<sub>t</sub>: 发射机输出功率 [dBW]</li>
+          <li>G<sub>t</sub>: 发射天线增益 [dBi]</li>
+          <li>L<sub>feed</sub>: 馈线/波导损耗 [dB]</li>
+        </ul>
+        <p style="margin-top:10px;">EIRP表征了发射系统的<strong>综合发射能力</strong>，是链路计算的关键输入参数。</p>
+        <div class="info-box" style="margin-top:10px;">
+          <strong>典型EIRP值：</strong><br>
+          • DTH卫星（Ku）：50~56 dBW<br>
+          • HTS卫星点波束（Ka）：55~62 dBW<br>
+          • 信关站（Ka）：75~85 dBW<br>
+          • VSAT终端（Ku）：42~50 dBW
+        </div>
+      </div>
+      <div>
+        <h3>G/T — 品质因数</h3>
+        <p><em>Figure of Merit</em></p>
+        <div class="formula">G/T = G<sub>r</sub> − 10log₁₀(T<sub>sys</sub>) &nbsp;[dB/K]</div>
+        <ul>
+          <li>G<sub>r</sub>: 接收天线增益 [dBi]</li>
+          <li>T<sub>sys</sub>: 系统噪声温度 [K]</li>
+        </ul>
+        <p style="margin-top:10px;">G/T值表征了接收系统的<strong>综合接收灵敏度</strong>，G/T值越大，接收能力越强。</p>
+        <div class="info-box" style="margin-top:10px;">
+          <strong>典型G/T值：</strong><br>
+          • GEO卫星接收（C）：−7 ~ +2 dB/K<br>
+          • GEO卫星接收（Ku）：+2 ~ +6 dB/K<br>
+          • 大型地球站（13m）：+35 ~ +42 dB/K<br>
+          • VSAT终端（1.2m Ku）：+17 ~ +22 dB/K
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Slide 19: 饱和功率与回退 -->
+<div class="slide" data-section="链路计算核心概念">
+  <div class="slide-header">
+    <span class="section-tag">PART 2 · 核心概念</span>
+    <h2>饱和功率与回退 (Backoff)</h2>
+  </div>
+  <div class="slide-content">
+    <div class="two-col">
+      <div>
+        <h3>功率放大器特性</h3>
+        <p>卫星转发器和地球站HPA的功放都存在<strong>非线性</strong>特性。在饱和点附近工作会产生信号畸变和互调干扰。</p>
+        <h3>关键概念</h3>
+        <ul>
+          <li><strong>饱和功率 P<sub>sat</sub>：</strong>功放最大输出功率</li>
+          <li><strong>输入回退 IBO：</strong>实际输入功率与饱和输入功率之比
+            <div class="formula">IBO = P<sub>in,sat</sub> − P<sub>in,actual</sub> &nbsp;[dB]</div>
+          </li>
+          <li><strong>输出回退 OBO：</strong>实际输出功率与饱和输出功率之比
+            <div class="formula">OBO = P<sub>out,sat</sub> − P<sub>out,actual</sub> &nbsp;[dB]</div>
+          </li>
+        </ul>
+      </div>
+      <div>
+        <h3>回退的必要性</h3>
+        <ul>
+          <li><strong>单载波工作：</strong>可接近饱和点（OBO 0~1 dB）</li>
+          <li><strong>多载波工作：</strong>需要较大回退（OBO 3~7 dB）以避免互调产物</li>
+          <li>OFDM/多载波信号的<strong>峰均比（PAPR）</strong>要求更大回退</li>
+        </ul>
+        <h3>IBO与OBO的关系</h3>
+        <p>对于行波管放大器（TWTA）：</p>
+        <div class="formula">OBO ≈ IBO − (0~3) dB（取决于工作点）</div>
+        <p>对于固态功放（SSPA），AM/AM特性更平坦：</p>
+        <div class="formula">OBO ≈ IBO（线性区内）</div>
+        <div class="warning-box" style="margin-top:10px;">
+          <strong>⚠️ 注意：</strong>回退直接影响链路EIRP，OBO每增加1 dB，等效减少1 dB发射功率，链路余量减小1 dB。
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Slide 20: 天线增益 -->
+<div class="slide" data-section="链路计算核心概念">
+  <div class="slide-header">
+    <span class="section-tag">PART 2 · 核心概念</span>
+    <h2>天线参数 — 天线增益</h2>
+  </div>
+  <div class="slide-content">
+    <h3>抛物面天线增益公式</h3>
+    <div class="formula">G = η × (π D / λ)² = η × (π D f / c)²</div>
+    <div class="formula">G [dBi] = 10 log₁₀(η) + 20 log₁₀(π) + 20 log₁₀(D) + 20 log₁₀(f) − 20 log₁₀(c)</div>
+    <div class="formula">G [dBi] ≈ −159.59 + 20 log₁₀(D[m]) + 20 log₁₀(f[Hz]) + 10 log₁₀(η)</div>
+    <p>简化公式：<span class="formula-inline">G [dBi] ≈ 17.8 + 20 log₁₀(D[m]) + 20 log₁₀(f[GHz]) + 10 log₁₀(η)</span></p>
+    <div class="two-col" style="margin-top:12px;">
+      <div>
+        <h3>影响天线增益的因素</h3>
+        <ul>
+          <li><strong>口径 D：</strong>增益与口径平方成正比</li>
+          <li><strong>频率 f：</strong>增益与频率平方成正比</li>
+          <li><strong>天线效率 η：</strong>通常 0.55~0.75</li>
+          <li>口径加倍 → 增益增加 6 dB</li>
+          <li>频率加倍 → 增益增加 6 dB</li>
+        </ul>
+      </div>
+      <div>
+        <h3>典型天线增益计算示例</h3>
+        <table class="data-table">
+          <tr><th>天线口径</th><th>频率</th><th>增益(η=0.6)</th></tr>
+          <tr><td>0.6 m</td><td>12 GHz (Ku)</td><td>33.4 dBi</td></tr>
+          <tr><td>1.2 m</td><td>12 GHz (Ku)</td><td>39.4 dBi</td></tr>
+          <tr><td>2.4 m</td><td>14 GHz (Ku)</td><td>46.7 dBi</td></tr>
+          <tr><td>1.2 m</td><td>20 GHz (Ka)</td><td>43.8 dBi</td></tr>
+          <tr><td>9.0 m</td><td>30 GHz (Ka)</td><td>64.3 dBi</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Slide 21: 半功率波束宽度 -->
+<div class="slide" data-section="链路计算核心概念">
+  <div class="slide-header">
+    <span class="section-tag">PART 2 · 核心概念</span>
+    <h2>天线参数 — 波束宽度与效率</h2>
+  </div>
+  <div class="slide-content">
+    <div class="two-col">
+      <div>
+        <h3>半功率波束宽度 (HPBW)</h3>
+        <p><em>Half-Power Beamwidth / -3dB Beamwidth</em></p>
+        <div class="formula">θ<sub>−3dB</sub> ≈ 70 × λ / D = 21 / (f[GHz] × D[m]) &nbsp;[度]</div>
+        <table class="data-table" style="margin-top:10px;">
+          <tr><th>天线口径</th><th>频率</th><th>HPBW</th></tr>
+          <tr><td>0.6 m</td><td>12 GHz</td><td>2.92°</td></tr>
+          <tr><td>1.2 m</td><td>12 GHz</td><td>1.46°</td></tr>
+          <tr><td>2.4 m</td><td>14 GHz</td><td>0.63°</td></tr>
+          <tr><td>9.0 m</td><td>30 GHz</td><td>0.078°</td></tr>
+        </table>
+        <div class="warning-box" style="margin-top:10px;">
+          <strong>⚠️ 天线口径越大、频率越高，波束越窄</strong>，对指向精度要求越高。大口径Ka频段天线的指向偏差需控制在百分之几度以内。
+        </div>
+      </div>
+      <div>
+        <h3>天线效率组成</h3>
+        <p>总效率 η 由多个因素共同决定：</p>
+        <ul>
+          <li><strong>照射效率 η<sub>ill</sub>：</strong>馈源照射均匀性（~0.85）</li>
+          <li><strong>溢出效率 η<sub>spill</sub>：</strong>馈源溢出损失（~0.90）</li>
+          <li><strong>面型精度 η<sub>surface</sub>：</strong>反射面精度</li>
+          <li><strong>遮挡效率 η<sub>block</sub>：</strong>副反射面遮挡（~0.95）</li>
+          <li><strong>极化效率 η<sub>pol</sub>：</strong>极化失配损失（~0.99）</li>
+        </ul>
+        <div class="formula">η = η<sub>ill</sub> × η<sub>spill</sub> × η<sub>surface</sub> × η<sub>block</sub> × η<sub>pol</sub></div>
+        <p>典型抛物面天线总效率：<strong>55% ~ 75%</strong></p>
+        <h3>交叉极化隔离度 (XPD)</h3>
+        <ul>
+          <li>天线对正交极化信号的抑制能力</li>
+          <li>典型值：轴向 > 30 dB，边缘 > 25 dB</li>
+          <li>影响双极化频率复用系统的干扰水平</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Slide 22: 噪声概念 -->
+<div class="slide" data-section="链路计算核心概念">
+  <div class="slide-header">
+    <span class="section-tag">PART 2 · 核心概念</span>
+    <h2>噪声概念 — 热噪声与噪声温度</h2>
+  </div>
+  <div class="slide-content">
+    <h3>热噪声功率</h3>
+    <div class="formula">N = k × T × B &nbsp;[W]</div>
+    <div class="formula">N [dBW] = 10 log₁₀(k) + 10 log₁₀(T) + 10 log₁₀(B) = −228.6 + 10 log₁₀(T[K]) + 10 log₁₀(B[Hz])</div>
+    <p>其中：k = 1.38 × 10⁻²³ J/K（玻尔兹曼常数），即 k = −228.6 dBW/K/Hz</p>
+    <div class="two-col" style="margin-top:12px;">
+      <div>
+        <h3>噪声温度 (Noise Temperature)</h3>
+        <ul>
+          <li>描述噪声源产生的噪声等效温度</li>
+          <li><strong>天线噪声温度 T<sub>ant</sub>：</strong>
+            <ul>
+              <li>宇宙背景噪声：~3 K</li>
+              <li>大气噪声：与仰角和频率有关</li>
+              <li>地面噪声拾取：取决于天线旁瓣</li>
+              <li>典型值：20~60 K（仰角>10°）</li>
+            </ul>
+          </li>
+          <li><strong>接收机噪声温度 T<sub>rx</sub>：</strong>
+            <ul>
+              <li>LNA噪声温度：35~150 K</li>
+              <li>C频段LNA：~40 K</li>
+              <li>Ku频段LNB：~120 K</li>
+            </ul>
+          </li>
+        </ul>
+      </div>
+      <div>
+        <h3>噪声系数 (Noise Figure, NF)</h3>
+        <div class="formula">NF = 10 log₁₀(F) &nbsp;[dB]</div>
+        <div class="formula">T<sub>rx</sub> = T₀ × (F − 1) = 290 × (10<sup>NF/10</sup> − 1)</div>
+        <table class="data-table" style="margin-top:8px;">
+          <tr><th>NF (dB)</th><th>F (线性)</th><th>T<sub>rx</sub> (K)</th></tr>
+          <tr><td>0.5</td><td>1.122</td><td>35.4</td></tr>
+          <tr><td>1.0</td><td>1.259</td><td>75.1</td></tr>
+          <tr><td>1.5</td><td>1.413</td><td>119.8</td></tr>
+          <tr><td>2.0</td><td>1.585</td><td>169.6</td></tr>
+          <tr><td>3.0</td><td>1.995</td><td>288.6</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Slide 23: 系统噪声温度 -->
+<div class="slide" data-section="链路计算核心概念">
+  <div class="slide-header">
+    <span class="section-tag">PART 2 · 核心概念</span>
+    <h2>系统噪声温度计算</h2>
+  </div>
+  <div class="slide-content">
+    <h3>系统噪声温度的组成</h3>
+    <div class="formula">T<sub>sys</sub> = T<sub>ant</sub> + T<sub>feed</sub> + T<sub>LNA</sub> + T<sub>后级</sub></div>
+    <p>考虑馈线损耗的完整表达式：</p>
+    <div class="formula">T<sub>sys</sub> = T<sub>ant</sub>/L<sub>feed</sub> + T₀(1 − 1/L<sub>feed</sub>) + T<sub>LNA</sub> + T<sub>2nd</sub>/G<sub>LNA</sub></div>
+    <div class="two-col" style="margin-top:12px;">
+      <div>
+        <h3>📊 典型系统噪声温度</h3>
+        <table class="data-table">
+          <tr><th>系统类型</th><th>T<sub>sys</sub> (K)</th></tr>
+          <tr><td>C频段大站（低噪声）</td><td>50~80</td></tr>
+          <tr><td>Ku频段VSAT</td><td>150~250</td></tr>
+          <tr><td>Ka频段地球站</td><td>200~400</td></tr>
+          <tr><td>GEO卫星接收（C）</td><td>500~1000</td></tr>
+          <tr><td>GEO卫星接收（Ku）</td><td>800~1500</td></tr>
+        </table>
+      </div>
+      <div>
+        <h3>计算示例</h3>
+        <div class="highlight-box">
+          <strong>Ku频段VSAT终端：</strong><br>
+          • T<sub>ant</sub> = 45 K（仰角30°）<br>
+          • 馈线损耗 L<sub>feed</sub> = 0.3 dB → L = 1.072<br>
+          • LNB噪声温度 T<sub>LNA</sub> = 120 K<br>
+          <br>
+          T<sub>sys</sub> = 45/1.072 + 290×(1−1/1.072) + 120<br>
+          = 42.0 + 19.5 + 120 = <strong>181.5 K</strong><br>
+          <br>
+          10log₁₀(T<sub>sys</sub>) = 10log₁₀(181.5) = <strong>22.6 dBK</strong>
+        </div>
+      </div>
+    </div>
+    <div class="key-point" style="margin-top:10px;">
+      <strong>🔑 工程启示：</strong>LNA/LNB应尽量靠近天线安装以减小馈线损耗；LNA噪声温度是影响系统灵敏度的关键因素。
+    </div>
+  </div>
+</div>
+
+<!-- Slide 24: 功率通量密度 -->
+<div class="slide" data-section="链路计算核心概念">
+  <div class="slide-header">
+    <span class="section-tag">PART 2 · 核心概念</span>
+    <h2>功率通量密度 (PFD)</h2>
+  </div>
+  <div class="slide-content">
+    <h3>功率通量密度定义</h3>
+    <div class="formula">PFD = EIRP − 10 log₁₀(4π d²) &nbsp;[dBW/m²]</div>
+    <div class="formula">PFD = EIRP − 10 log₁₀(4π) − 20 log₁₀(d) &nbsp;[dBW/m²]</div>
+    <p>PFD表示在距离d处单位面积上的功率密度，是ITU协调和干扰分析的重要参数。</p>
+    <div class="two-col" style="margin-top:12px;">
+      <div>
+        <h3>ITU PFD限制</h3>
+        <p>ITU对GEO卫星在地面产生的PFD有严格限制（Radio Regulations Article 21），以保护地面无线业务：</p>
+        <table class="data-table">
+          <tr><th>频段</th><th>PFD限制<br>dBW/m²/4kHz</th><th>仰角</th></tr>
+          <tr><td>C频段(3.7-4.2 GHz)</td><td>−152 ~ −142</td><td>0°~90°</td></tr>
+          <tr><td>Ku频段(12.2-12.75)</td><td>−148 ~ −138</td><td>0°~90°</td></tr>
+          <tr><td>Ka频段(17.7-19.7)</td><td>−115 ~ −105</td><td>0°~90°</td></tr>
+        </table>
+      </div>
+      <div>
+        <h3>PFD与接收功率的关系</h3>
+        <div class="formula">C = PFD + 10 log₁₀(A<sub>eff</sub>)</div>
+        <p>其中有效面积 A<sub>eff</sub> = G × λ² / (4π)</p>
+        <div class="formula">C = PFD + G<sub>r</sub> − 10 log₁₀(4π/λ²)</div>
+        <div class="info-box" style="margin-top:10px;">
+          <strong>应用场景：</strong>在DTH系统设计中，PFD决定了地面接收天线的最小口径。例如Ku频段DTH，PFD约−110 dBW/m²时，0.45m天线可以满足接收要求。
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Slide 25: Part 2 小结 -->
+<div class="slide" data-section="链路计算核心概念">
+  <div class="slide-header">
+    <span class="section-tag">PART 2 · 核心概念</span>
+    <h2>Part 2 小结 — 核心概念速查</h2>
+  </div>
+  <div class="slide-content">
+    <div class="two-col">
+      <div>
+        <h3>📐 关键公式速查</h3>
+        <table class="data-table" style="font-size:0.88em;">
+          <tr><th>概念</th><th>公式</th></tr>
+          <tr><td>频率/波长</td><td>c = f × λ</td></tr>
+          <tr><td>天线增益</td><td>G = η(πD/λ)²</td></tr>
+          <tr><td>EIRP</td><td>P<sub>t</sub> + G<sub>t</sub> − L<sub>feed</sub></td></tr>
+          <tr><td>G/T</td><td>G<sub>r</sub> − 10log(T<sub>sys</sub>)</td></tr>
+          <tr><td>热噪声</td><td>N = kTB</td></tr>
+          <tr><td>噪声温度</td><td>T = T₀(F−1)</td></tr>
+          <tr><td>信息速率</td><td>R<sub>b</sub> = R<sub>s</sub>·log₂M·R</td></tr>
+          <tr><td>PFD</td><td>EIRP − 10log(4πd²)</td></tr>
+        </table>
+      </div>
+      <div>
+        <h3>💡 核心认识</h3>
+        <ul>
+          <li>卫星通信是<strong>功率受限</strong>和<strong>带宽受限</strong>的系统</li>
+          <li>dB运算将复杂的乘除<strong>简化为加减</strong></li>
+          <li>EIRP和G/T是描述<strong>发射/接收能力</strong>的综合指标</li>
+          <li>调制阶数越高，频谱效率越高，但<strong>所需信噪比更大</strong></li>
+          <li>系统噪声温度由天线、馈线和接收机<strong>共同决定</strong></li>
+          <li>回退(Backoff)是功率利用效率和信号质量间的<strong>折衷</strong></li>
+        </ul>
+        <div class="info-box" style="margin-top:12px;">
+          <strong>🔜 接下来：</strong>Part 3 将详细讲解链路计算的核心架构和完整计算方法，包括上下行C/N计算和总链路合成。
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== Part 3: 链路计算核心架构和计算方法 ========== -->
+<!-- Slide 26: Part 3 标题页 -->
+<div class="slide section-slide" data-section="链路计算核心架构和计算方法">
+  <div class="part-number">PART 3</div>
+  <h1>链路计算核心架构<br>和计算方法</h1>
+  <div class="section-divider"></div>
+  <div class="section-desc">Link Budget Architecture &amp; Calculation Methods<br>上行链路 · 下行链路 · 转发器 · 干扰分析 · 总链路合成</div>
+</div>
+
+<!-- Slide 27: 链路基本架构 -->
+<div class="slide" data-section="链路计算核心架构和计算方法">
+  <div class="slide-header">
+    <span class="section-tag">PART 3 · 计算方法</span>
+    <h2>链路计算基本架构</h2>
+  </div>
+  <div class="slide-content">
+    <div class="diagram-flow" style="margin:20px 0;font-size:1.1em;">
+      <div class="box" style="padding:12px 20px;">📡 发射地球站<br>Tx Earth Station</div>
+      <span class="arrow">⬆ 上行链路</span>
+      <div class="box highlight" style="padding:12px 20px;">🛰️ 卫星转发器<br>Satellite Transponder</div>
+      <span class="arrow">⬇ 下行链路</span>
+      <div class="box alt" style="padding:12px 20px;">📡 接收地球站<br>Rx Earth Station</div>
+    </div>
+    <div class="two-col">
+      <div>
+        <h3>上行链路 (Uplink)</h3>
+        <ul>
+          <li>方向：地球站 → 卫星</li>
+          <li>频率较高（如C频段6 GHz，Ku频段14 GHz）</li>
+          <li>地球站EIRP较大（功放功率高）</li>
+          <li>关键参数：EIRP<sub>ES</sub>, G/T<sub>SAT</sub>, FSL<sub>up</sub></li>
+        </ul>
+        <h3>下行链路 (Downlink)</h3>
+        <ul>
+          <li>方向：卫星 → 地球站</li>
+          <li>频率较低（如C频段4 GHz，Ku频段12 GHz）</li>
+          <li>卫星EIRP受限（星上功率有限）</li>
+          <li>关键参数：EIRP<sub>SAT</sub>, G/T<sub>ES</sub>, FSL<sub>dn</sub></li>
+        </ul>
+      </div>
+      <div>
+        <h3>端到端链路 (End-to-End)</h3>
+        <div class="highlight-box">
+          <p><strong>透明转发器链路：</strong></p>
+          <p>上行噪声和下行噪声叠加，总链路C/N由上行和下行共同决定。</p>
+          <div class="formula" style="margin-top:8px;">
+            1/(C/N)<sub>total</sub> = 1/(C/N)<sub>up</sub> + 1/(C/N)<sub>dn</sub> + 1/(C/I)
+          </div>
+          <p style="margin-top:8px;"><strong>再生转发器链路：</strong></p>
+          <p>星上解调再调制，上下行链路独立，总BER：</p>
+          <div class="formula" style="margin-top:4px;">BER<sub>total</sub> ≈ BER<sub>up</sub> + BER<sub>dn</sub></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Slide 28: 上行C/N计算 -->
+<div class="slide" data-section="链路计算核心架构和计算方法">
+  <div class="slide-header">
+    <span class="section-tag">PART 3 · 计算方法</span>
+    <h2>上行载噪比 (C/N)<sub>up</sub> 计算</h2>
+  </div>
+  <div class="slide-content">
+    <h3>上行C/N公式推导</h3>
+    <p>在dB域中，接收载波功率：</p>
+    <div class="formula">C<sub>up</sub> = EIRP<sub>ES</sub> + G<sub>SAT</sub> − FSL<sub>up</sub> − L<sub>atm</sub> − L<sub>point</sub> − L<sub>pol</sub> − L<sub>other</sub> &nbsp;[dBW]</div>
+    <p>噪声功率：</p>
+    <div class="formula">N<sub>up</sub> = k + T<sub>SAT</sub> + B = −228.6 + 10log₁₀(T<sub>SAT</sub>) + 10log₁₀(B) &nbsp;[dBW]</div>
+    <p>合并后：</p>
+    <div class="formula" style="background:#c5cae9;font-size:1.2em;">
+      (C/N)<sub>up</sub> = EIRP<sub>ES</sub> + (G/T)<sub>SAT</sub> − k − 10log₁₀(B) − FSL<sub>up</sub> − L<sub>atm</sub> − L<sub>other</sub> &nbsp;[dB]
+    </div>
+    <h3 style="margin-top:15px;">各项含义</h3>
+    <table class="data-table" style="font-size:0.9em;">
+      <tr><th>符号</th><th>含义</th><th>单位</th><th>典型值</th></tr>
+      <tr><td>EIRP<sub>ES</sub></td><td>地球站等效全向辐射功率</td><td>dBW</td><td>45~85</td></tr>
+      <tr><td>(G/T)<sub>SAT</sub></td><td>卫星接收品质因数</td><td>dB/K</td><td>−5 ~ +10</td></tr>
+      <tr><td>k</td><td>玻尔兹曼常数</td><td>dBW/K/Hz</td><td>−228.6</td></tr>
+      <tr><td>B</td><td>噪声带宽</td><td>dBHz</td><td>60~80</td></tr>
+      <tr><td>FSL<sub>up</sub></td><td>上行自由空间损耗</td><td>dB</td><td>195~215</td></tr>
+      <tr><td>L<sub>atm</sub></td><td>大气衰减（含降雨）</td><td>dB</td><td>0.3~20+</td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- Slide 29: 下行C/N计算 -->
+<div class="slide" data-section="链路计算核心架构和计算方法">
+  <div class="slide-header">
+    <span class="section-tag">PART 3 · 计算方法</span>
+    <h2>下行载噪比 (C/N)<sub>dn</sub> 计算</h2>
+  </div>
+  <div class="slide-content">
+    <h3>下行C/N公式</h3>
+    <div class="formula" style="background:#c5cae9;font-size:1.2em;">
+      (C/N)<sub>dn</sub> = EIRP<sub>SAT</sub> + (G/T)<sub>ES</sub> − k − 10log₁₀(B) − FSL<sub>dn</sub> − L<sub>atm</sub> − L<sub>other</sub> &nbsp;[dB]
+    </div>
+    <h3 style="margin-top:12px;">各项含义</h3>
+    <table class="data-table" style="font-size:0.9em;">
+      <tr><th>符号</th><th>含义</th><th>单位</th><th>典型值</th></tr>
+      <tr><td>EIRP<sub>SAT</sub></td><td>卫星EIRP（含OBO）</td><td>dBW</td><td>35~62</td></tr>
+      <tr><td>(G/T)<sub>ES</sub></td><td>地球站接收品质因数</td><td>dB/K</td><td>12~42</td></tr>
+      <tr><td>FSL<sub>dn</sub></td><td>下行自由空间损耗</td><td>dB</td><td>192~210</td></tr>
+      <tr><td>L<sub>atm</sub></td><td>下行大气衰减</td><td>dB</td><td>0.2~15+</td></tr>
+    </table>
+    <div class="key-point" style="margin-top:12px;">
+      <strong>🔑 上行与下行的关键区别：</strong><br>
+      • 上行频率 > 下行频率 → 上行FSL更大<br>
+      • 地球站发射功率远大于卫星 → 上行通常不是瓶颈<br>
+      • 卫星功率有限 → <strong>下行链路通常是瓶颈</strong>（功率受限情况）<br>
+      • 降雨衰减在高频段更大 → Ka频段上行雨衰可能成为瓶颈
+    </div>
+  </div>
+</div>
+
+<!-- Slide 30: 自由空间损耗 -->
+<div class="slide" data-section="链路计算核心架构和计算方法">
+  <div class="slide-header">
+    <span class="section-tag">PART 3 · 计算方法</span>
+    <h2>自由空间损耗 (FSL) 计算</h2>
+  </div>
+  <div class="slide-content">
+    <h3>自由空间损耗公式 (Free Space Loss)</h3>
+    <div class="formula">FSL = (4πd/λ)² = (4πdf/c)²</div>
+    <div class="formula" style="background:#c5cae9;font-size:1.15em;">
+      FSL [dB] = 20log₁₀(4πd/λ) = 92.45 + 20log₁₀(f[GHz]) + 20log₁₀(d[km])
+    </div>
+    <div class="two-col" style="margin-top:12px;">
+      <div>
+        <h3>GEO卫星典型FSL值</h3>
+        <table class="data-table">
+          <tr><th>频段</th><th>频率(GHz)</th><th>距离(km)</th><th>FSL(dB)</th></tr>
+          <tr><td>C下行</td><td>4.0</td><td>36,000</td><td>195.6</td></tr>
+          <tr><td>C上行</td><td>6.0</td><td>36,000</td><td>199.1</td></tr>
+          <tr><td>Ku下行</td><td>12.0</td><td>37,000</td><td>205.4</td></tr>
+          <tr><td>Ku上行</td><td>14.0</td><td>37,000</td><td>206.7</td></tr>
+          <tr><td>Ka下行</td><td>20.0</td><td>38,000</td><td>210.1</td></tr>
+          <tr><td>Ka上行</td><td>30.0</td><td>38,000</td><td>213.6</td></tr>
+        </table>
+      </div>
+      <div>
+        <h3>星地距离计算</h3>
+        <p>GEO卫星到地球站的斜距(Slant Range)：</p>
+        <div class="formula">d = √(R² + r² − 2Rr·cosψ)</div>
+        <p>其中：</p>
+        <ul>
+          <li>R = 42,164 km（地心到GEO距离）</li>
+          <li>r = 6,371 km（地球半径）</li>
+          <li>ψ = 星下点与地球站的地心角</li>
+        </ul>
+        <div class="formula">cosψ = cos(φ<sub>ES</sub>)·cos(Δλ)</div>
+        <p>φ<sub>ES</sub>为地球站纬度，Δλ为经度差</p>
+        <p><strong>星下点距离：</strong>d<sub>min</sub> = 35,786 km</p>
+        <p><strong>边缘距离：</strong>d<sub>max</sub> ≈ 41,680 km</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Slide 31: 仰角计算 -->
+<div class="slide" data-section="链路计算核心架构和计算方法">
+  <div class="slide-header">
+    <span class="section-tag">PART 3 · 计算方法</span>
+    <h2>仰角与方位角计算</h2>
+  </div>
+  <div class="slide-content">
+    <div class="two-col">
+      <div>
+        <h3>仰角 (Elevation Angle)</h3>
+        <div class="formula">El = arctan[(cosψ − r/R) / √(1 − cos²ψ)]</div>
+        <p>或等效形式：</p>
+        <div class="formula">El = arctan[(cos(φ)cos(Δλ) − 0.1513) / √(1 − cos²(φ)cos²(Δλ))]</div>
+        <p>其中 0.1513 = R<sub>e</sub>/R<sub>geo</sub> = 6371/42164</p>
+        <h3>典型仰角值（北京，卫星110.5°E）</h3>
+        <table class="data-table">
+          <tr><th>地球站</th><th>纬度</th><th>仰角</th></tr>
+          <tr><td>北京</td><td>39.9°N</td><td>~44°</td></tr>
+          <tr><td>广州</td><td>23.1°N</td><td>~62°</td></tr>
+          <tr><td>乌鲁木齐</td><td>43.8°N</td><td>~32°</td></tr>
+          <tr><td>哈尔滨</td><td>45.7°N</td><td>~28°</td></tr>
+        </table>
+      </div>
+      <div>
+        <h3>方位角 (Azimuth Angle)</h3>
+        <div class="formula">Az = 180° + arctan[tan(Δλ) / sin(φ)]</div>
+        <p>（适用于北半球、卫星在地球站以南的情况）</p>
+        <h3>仰角对链路的影响</h3>
+        <ul>
+          <li><strong>仰角越低：</strong>
+            <ul>
+              <li>星地距离越远 → FSL越大</li>
+              <li>大气路径越长 → 大气衰减越大</li>
+              <li>降雨路径越长 → 雨衰越严重</li>
+              <li>天线噪声温度升高（地面噪声拾取）</li>
+            </ul>
+          </li>
+          <li><strong>工程要求：</strong>仰角一般 ≥ 5°~10°</li>
+        </ul>
+        <div class="warning-box" style="margin-top:10px;">
+          <strong>⚠️ 注意：</strong>仰角低于5°时，大气闪烁和多径效应显著，链路性能急剧恶化。中国境内使用GEO卫星，仰角通常在20°~70°之间。
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Slide 32: 转发器工作原理 -->
+<div class="slide" data-section="链路计算核心架构和计算方法">
+  <div class="slide-header">
+    <span class="section-tag">PART 3 · 计算方法</span>
+    <h2>转发器工作原理 — 透明转发器</h2>
+  </div>
+  <div class="slide-content">
+    <h3>透明转发器（弯管式 Bent-pipe）</h3>
+    <p>只进行频率变换和功率放大，不对信号内容进行处理。信号"原样"转发。</p>
+    <div class="diagram-flow" style="margin:15px 0;">
+      <div class="box">接收天线</div><span class="arrow">→</span>
+      <div class="box alt">LNA<br>低噪声放大</div><span class="arrow">→</span>
+      <div class="box">频率变换<br>Down Converter</div><span class="arrow">→</span>
+      <div class="box alt">信道滤波<br>IMUX</div><span class="arrow">→</span>
+      <div class="box highlight">TWTA/SSPA<br>功率放大</div><span class="arrow">→</span>
+      <div class="box">OMUX<br>输出复用</div><span class="arrow">→</span>
+      <div class="box alt">发射天线</div>
+    </div>
+    <div class="two-col">
+      <div>
+        <h3>转发器关键参数</h3>
+        <ul>
+          <li><strong>带宽：</strong>36 MHz / 54 MHz / 72 MHz（典型C/Ku）</li>
+          <li><strong>饱和EIRP：</strong>每个转发器的最大输出EIRP</li>
+          <li><strong>饱和通量密度 (SFD)：</strong>使转发器达到饱和的输入PFD</li>
+          <li><strong>增益：</strong>输入-输出功率关系</li>
+          <li><strong>增益平坦度：</strong>带内增益波动</li>
+        </ul>
+      </div>
+      <div>
+        <h3>透明转发器特点</h3>
+        <ul>
+          <li>✅ 结构简单，可靠性高</li>
+          <li>✅ 对信号格式透明，灵活性好</li>
+          <li>❌ 上行噪声会被放大并转发到下行</li>
+          <li>❌ 上行干扰也会被转发</li>
+          <li>❌ 无法进行星上信号再生</li>
+        </ul>
+        <div class="info-box" style="margin-top:8px;">
+          <strong>📌 </strong>目前商用通信卫星仍以透明转发器为主流，本课程链路计算主要基于透明转发器。
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Slide 33: 再生转发器 -->
+<div class="slide" data-section="链路计算核心架构和计算方法">
+  <div class="slide-header">
+    <span class="section-tag">PART 3 · 计算方法</span>
+    <h2>转发器工作原理 — 再生转发器与DTP</h2>
+  </div>
+  <div class="slide-content">
+    <div class="two-col">
+      <div>
+        <h3>再生转发器 (Regenerative)</h3>
+        <p>在星上进行<strong>解调-再调制</strong>，将上行噪声"清除"。</p>
+        <div class="diagram-flow" style="margin:10px 0;">
+          <div class="box">接收</div><span class="arrow">→</span>
+          <div class="box highlight">解调</div><span class="arrow">→</span>
+          <div class="box alt">处理</div><span class="arrow">→</span>
+          <div class="box highlight">再调制</div><span class="arrow">→</span>
+          <div class="box">发射</div>
+        </div>
+        <ul>
+          <li>✅ 上下行链路独立，性能更好</li>
+          <li>✅ 可实现星上交换/路由</li>
+          <li>❌ 复杂度高，功耗大</li>
+          <li>❌ 调制方式在卫星制造时确定，灵活性差</li>
+        </ul>
+      </div>
+      <div>
+        <h3>数字透明处理器 (DTP)</h3>
+        <p>Digital Transparent Processor — 灵活载荷的核心技术</p>
+        <ul>
+          <li>在数字域进行<strong>滤波、路由、功率分配</strong></li>
+          <li>不进行解调/再调制，保持信号透明</li>
+          <li>可实现波束间灵活互联互通</li>
+          <li>支持带宽和功率的<strong>动态重配置</strong></li>
+          <li>代表卫星：中星26号、ViaSat-3、Jupiter-3</li>
+        </ul>
+        <h3>对链路计算的影响</h3>
+        <div class="warning-box">
+          <strong>DTP转发器链路计算注意：</strong>
+          由于波束间路由灵活，每条链路的卫星增益和功率分配可能不同，需要根据实际配置参数分别计算每条"铰链"链路。
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Slide 34: 载波功率计算 -->
+<div class="slide" data-section="链路计算核心架构和计算方法">
+  <div class="slide-header">
+    <span class="section-tag">PART 3 · 计算方法</span>
+    <h2>载波功率的计算</h2>
+  </div>
+  <div class="slide-content">
+    <div class="two-col">
+      <div>
+        <h3>单载波 (Single Carrier) 工作</h3>
+        <ul>
+          <li>一个载波独占整个转发器</li>
+          <li>功放可以在<strong>接近饱和点</strong>工作（OBO ≈ 0~1 dB）</li>
+          <li>最大化功率利用效率</li>
+          <li>典型场景：DTH广播、大容量点对点</li>
+        </ul>
+        <div class="formula">
+          EIRP<sub>carrier</sub> = EIRP<sub>sat,peak</sub> − OBO
+        </div>
+      </div>
+      <div>
+        <h3>多载波 (Multi-Carrier) 工作</h3>
+        <ul>
+          <li>多个载波共享一个转发器</li>
+          <li>需要功放<strong>回退工作</strong>以避免互调</li>
+          <li>每个载波分配的功率取决于其占用带宽和功率比</li>
+        </ul>
+        <div class="formula">
+          EIRP<sub>carrier</sub> = EIRP<sub>sat,peak</sub> − OBO − 10log₁₀(n) + ΔP
+        </div>
+        <p>其中 n 为载波数，ΔP 为功率不等分配调整</p>
+      </div>
+    </div>
+    <h3 style="margin-top:15px;">转发器功率与带宽的分配</h3>
+    <div class="highlight-box">
+      <p><strong>功率受限情况（Power Limited）：</strong>转发器功率先用完，带宽有剩余。常见于小终端场景。</p>
+      <p><strong>带宽受限情况（Bandwidth Limited）：</strong>转发器带宽先用完，功率有剩余。常见于高EIRP需求场景。</p>
+      <p>最优设计应使功率和带宽<strong>同时用尽</strong>。</p>
+    </div>
+  </div>
+</div>
+
+<!-- Slide 35: 干扰计算概述 -->
+<div class="slide" data-section="链路计算核心架构和计算方法">
+  <div class="slide-header">
+    <span class="section-tag">PART 3 · 计算方法</span>
+    <h2>干扰计算概述</h2>
+  </div>
+  <div class="slide-content">
+    <h3>卫星通信系统主要干扰源</h3>
+    <table class="data-table">
+      <tr>
+        <th>干扰类型</th><th>英文缩写</th><th>产生原因</th><th>典型C/I (dB)</th>
+      </tr>
+      <tr>
+        <td><strong>邻星干扰</strong></td><td>ASI (C/I<sub>adj</sub>)</td>
+        <td>相邻轨位卫星信号进入本站天线旁瓣</td><td>20~30</td>
+      </tr>
+      <tr>
+        <td><strong>交叉极化干扰</strong></td><td>XPI (C/I<sub>xpol</sub>)</td>
+        <td>正交极化信号泄漏到本极化通道</td><td>25~33</td>
+      </tr>
+      <tr>
+        <td><strong>互调干扰</strong></td><td>IM (C/IM)</td>
+        <td>功放非线性产生的互调产物</td><td>18~25</td>
+      </tr>
+      <tr>
+        <td><strong>同频干扰</strong></td><td>CCI</td>
+        <td>多波束频率复用系统中同频波束间干扰</td><td>18~25</td>
+      </tr>
+      <tr>
+        <td><strong>地面干扰</strong></td><td>TI</td>
+        <td>地面系统（微波、5G）对卫星频段的干扰</td><td>变化大</td>
+      </tr>
+    </table>
+    <div class="key-point" style="margin-top:12px;">
+      <strong>🔑 干扰对链路的影响：</strong>干扰等效为噪声，降低有效C/N。在链路计算中，需将所有干扰源的载干比(C/I)与热噪声载噪比(C/N)合成，得到总载噪比(C/N+I)。
+    </div>
+  </div>
+</div>
+
+<!-- Slide 36: 邻星干扰 -->
+<div class="slide" data-section="链路计算核心架构和计算方法">
+  <div class="slide-header">
+    <span class="section-tag">PART 3 · 计算方法</span>
+    <h2>邻星干扰 (ASI) 计算</h2>
+  </div>
+  <div class="slide-content">
+    <h3>邻星干扰的来源</h3>
+    <p>GEO轨道卫星间距通常为2°~3°。地球站天线的旁瓣会拾取相邻卫星的信号，形成干扰。</p>
+    <div class="two-col" style="margin-top:10px;">
+      <div>
+        <h3>上行ASI</h3>
+        <p>本站发射信号通过天线旁瓣照射到邻星：</p>
+        <div class="formula">(C/I)<sub>up,ASI</sub> = EIRP<sub>ES</sub>(θ₀) − EIRP<sub>ES</sub>(θ<sub>adj</sub>) + (G/T)<sub>SAT</sub>(θ₀) − (G/T)<sub>SAT</sub>(θ<sub>adj</sub>)</div>
+        <p>简化为：</p>
+        <div class="formula">(C/I)<sub>up,ASI</sub> ≈ G<sub>ES</sub>(θ₀) − G<sub>ES</sub>(θ<sub>adj</sub>)</div>
+        <p>θ<sub>adj</sub>为邻星方向偏离角（约等于轨位间距）</p>
+      </div>
+      <div>
+        <h3>下行ASI</h3>
+        <p>邻星信号通过接收天线旁瓣进入接收机：</p>
+        <div class="formula">(C/I)<sub>dn,ASI</sub> = EIRP<sub>SAT</sub> − EIRP<sub>adj</sub> + G<sub>ES</sub>(θ₀) − G<sub>ES</sub>(θ<sub>adj</sub>)</div>
+        <h3>ITU天线旁瓣包络</h3>
+        <p>ITU-R S.580/S.465 参考天线模型：</p>
+        <div class="formula">G(θ) = 32 − 25 log₁₀(θ) &nbsp;[dBi]<br>（1° ≤ θ ≤ 48°）</div>
+        <p>例：θ = 2°时，G(2°) = 32 − 25×0.301 = <strong>24.5 dBi</strong></p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Slide 37: 互调干扰 -->
+<div class="slide" data-section="链路计算核心架构和计算方法">
+  <div class="slide-header">
+    <span class="section-tag">PART 3 · 计算方法</span>
+    <h2>互调干扰与交叉极化干扰</h2>
+  </div>
+  <div class="slide-content">
+    <div class="two-col">
+      <div>
+        <h3>互调干扰 (Intermodulation, IM)</h3>
+        <p>多载波通过非线性功放时产生互调产物：</p>
+        <div class="formula">f<sub>IM3</sub> = 2f₁ − f₂ 或 2f₂ − f₁ （三阶互调）</div>
+        <ul>
+          <li>三阶互调最为严重，落在信号带内</li>
+          <li>互调功率与回退量密切相关</li>
+          <li>OBO增加 1 dB → C/IM改善约 2 dB（三阶）</li>
+        </ul>
+        <h3>典型C/IM值</h3>
+        <table class="data-table">
+          <tr><th>工作模式</th><th>OBO (dB)</th><th>C/IM (dB)</th></tr>
+          <tr><td>单载波</td><td>0~1</td><td>N/A</td></tr>
+          <tr><td>2载波</td><td>3~4</td><td>20~24</td></tr>
+          <tr><td>多载波(>4)</td><td>5~7</td><td>16~22</td></tr>
+        </table>
+      </div>
+      <div>
+        <h3>交叉极化干扰 (XPI)</h3>
+        <p>正交极化信号之间的泄漏：</p>
+        <div class="formula">(C/I)<sub>xpol</sub> = XPD<sub>sat</sub> ⊕ XPD<sub>ES</sub></div>
+        <p>⊕表示两个XPD值的功率合成：</p>
+        <div class="formula">1/(C/I)<sub>xpol</sub> = 1/XPD<sub>sat</sub> + 1/XPD<sub>ES</sub></div>
+        <ul>
+          <li>卫星天线XPD：通常 27~33 dB</li>
+          <li>地球站天线XPD：通常 25~35 dB</li>
+          <li>降雨会显著降低XPD → 需额外考虑</li>
+        </ul>
+        <div class="info-box" style="margin-top:10px;">
+          <strong>💡 </strong>如果不使用频率复用（单极化），则不存在XPI干扰。
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Slide 38: 总链路C/N合成 -->
+<div class="slide" data-section="链路计算核心架构和计算方法">
+  <div class="slide-header">
+    <span class="section-tag">PART 3 · 计算方法</span>
+    <h2>总链路 C/N 合成</h2>
+  </div>
+  <div class="slide-content">
+    <h3>总载噪比合成公式（透明转发器）</h3>
+    <div class="formula" style="background:#c5cae9;font-size:1.25em;">
+      1/(C/N)<sub>total</sub> = 1/(C/N)<sub>up</sub> + 1/(C/N)<sub>dn</sub> + 1/(C/I)<sub>IM</sub> + 1/(C/I)<sub>ASI,up</sub> + 1/(C/I)<sub>ASI,dn</sub> + 1/(C/I)<sub>xpol</sub>
+    </div>
+    <p style="margin-top:8px;"><strong>注意：</strong>所有项均为线性值（非dB值），即需先将dB值转换为线性值进行计算，再转回dB。</p>
+    <div class="two-col" style="margin-top:15px;">
+      <div>
+        <h3>合成计算示例</h3>
+        <div class="highlight-box">
+          <p>假设各项如下（dB → 线性）：</p>
+          <table class="data-table" style="font-size:0.88em;">
+            <tr><th>分项</th><th>dB值</th><th>线性值 (×10⁻²)</th></tr>
+            <tr><td>(C/N)<sub>up</sub></td><td>25.0</td><td>0.316</td></tr>
+            <tr><td>(C/N)<sub>dn</sub></td><td>14.0</td><td>3.981</td></tr>
+            <tr><td>(C/I)<sub>ASI</sub></td><td>25.0</td><td>0.316</td></tr>
+            <tr><td>(C/I)<sub>xpol</sub></td><td>27.0</td><td>0.200</td></tr>
+            <tr><td>(C/I)<sub>IM</sub></td><td>22.0</td><td>0.631</td></tr>
+          </table>
+          <p style="margin-top:8px;">总和 = 5.444 × 10⁻²</p>
+          <p><strong>(C/N)<sub>total</sub> = −10log₁₀(0.05444) = 12.64 dB</strong></p>
+        </div>
+      </div>
+      <div>
+        <h3>关键观察</h3>
+        <ul>
+          <li>总C/N<strong>始终小于最小分项</strong></li>
+          <li>对总C/N影响最大的是<strong>数值最小</strong>的那一项</li>
+          <li>本例中下行(C/N)<sub>dn</sub>=14 dB是<strong>瓶颈</strong></li>
+          <li>改善瓶颈项可以最有效提升总链路性能</li>
+          <li>当某一项远大于其他项时，对其改善效果不明显</li>
+        </ul>
+        <div class="warning-box" style="margin-top:10px;">
+          <strong>⚠️ 工程准则：</strong>下行C/N与上行C/N之差不宜超过10~12 dB，否则意味着上行/下行设计严重不平衡。
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Slide 39: Eb/N0与C/N -->
+<div class="slide" data-section="链路计算核心架构和计算方法">
+  <div class="slide-header">
+    <span class="section-tag">PART 3 · 计算方法</span>
+    <h2>E<sub>b</sub>/N<sub>0</sub> 与 C/N 的关系</h2>
+  </div>
+  <div class="slide-content">
+    <h3>从 C/N 到 E<sub>b</sub>/N<sub>0</sub></h3>
+    <div class="formula" style="font-size:1.2em;">
+      E<sub>b</sub>/N<sub>0</sub> = C/N + B/R<sub>b</sub> = C/N + 10log₁₀(B/R<sub>b</sub>) &nbsp;[dB]
+    </div>
+    <p>其中 B 为噪声带宽（Hz），R<sub>b</sub> 为信息比特速率（bit/s）</p>
+    <div class="two-col" style="margin-top:12px;">
+      <div>
+        <h3>E<sub>b</sub>/N<sub>0</sub> 的意义</h3>
+        <ul>
+          <li>E<sub>b</sub>/N<sub>0</sub> 是<strong>归一化信噪比</strong>，独立于带宽和速率</li>
+          <li>直接决定误码率（BER）性能</li>
+          <li>是比较不同调制编码方案的<strong>统一标准</strong></li>
+          <li>所需 E<sub>b</sub>/N<sub>0</sub> 取决于 MODCOD 和目标 BER</li>
+        </ul>
+      </div>
+      <div>
+        <h3>DVB-S2 典型门限 (BER=10⁻⁷, QEF)</h3>
+        <table class="data-table" style="font-size:0.88em;">
+          <tr><th>MODCOD</th><th>频谱效率<br>(bit/s/Hz)</th><th>所需 E<sub>s</sub>/N<sub>0</sub><br>(dB)</th></tr>
+          <tr><td>QPSK 1/4</td><td>0.49</td><td>−2.35</td></tr>
+          <tr><td>QPSK 1/2</td><td>0.99</td><td>1.00</td></tr>
+          <tr><td>QPSK 3/4</td><td>1.49</td><td>3.10</td></tr>
+          <tr><td>8PSK 2/3</td><td>1.98</td><td>5.18</td></tr>
+          <tr><td>16APSK 3/4</td><td>2.97</td><td>8.97</td></tr>
+          <tr><td>32APSK 4/5</td><td>3.95</td><td>12.73</td></tr>
+        </table>
+      </div>
+    </div>
+    <h3>链路余量 (Link Margin)</h3>
+    <div class="formula" style="background:#c5cae9;">
+      Link Margin = (C/N)<sub>total,actual</sub> − (C/N)<sub>required</sub> &nbsp;[dB] &nbsp;&nbsp;（要求 ≥ 0 dB，通常留 1~3 dB）
+    </div>
+  </div>
+</div>
+
+<!-- Slide 40: Es/N0说明 -->
+<div class="slide" data-section="链路计算核心架构和计算方法">
+  <div class="slide-header">
+    <span class="section-tag">PART 3 · 计算方法</span>
+    <h2>E<sub>s</sub>/N<sub>0</sub> 与实用计算关系</h2>
+  </div>
+  <div class="slide-content">
+    <h3>E<sub>s</sub>/N<sub>0</sub> 与 E<sub>b</sub>/N<sub>0</sub> 的关系</h3>
+    <div class="formula">E<sub>s</sub>/N<sub>0</sub> = E<sub>b</sub>/N<sub>0</sub> + 10log₁₀(η<sub>spec</sub>)</div>
+    <p>其中 η<sub>spec</sub> = 频谱效率 [bit/s/Hz]</p>
+    <div class="formula">E<sub>s</sub>/N<sub>0</sub> = C/N + 10log₁₀(R<sub>s</sub>/B) ≈ C/N − 10log₁₀(1+α)</div>
+    <p>DVB-S2标准中通常以 E<sub>s</sub>/N<sub>0</sub> 给出门限值。</p>
+    <div class="two-col" style="margin-top:12px;">
+      <div>
+        <h3>实际链路中的完整转换</h3>
+        <div class="highlight-box">
+          <strong>已知条件：</strong><br>
+          • 占用带宽 B<sub>occ</sub> = 36 MHz<br>
+          • 滚降系数 α = 0.20<br>
+          • MODCOD: QPSK 3/4<br>
+          • 频谱效率: 1.49 bit/s/Hz<br><br>
+          <strong>计算过程：</strong><br>
+          R<sub>s</sub> = 36 / (1+0.20) = 30 Msps<br>
+          R<sub>b</sub> = 30 × 1.49 = 44.7 Mbps<br>
+          B/R<sub>b</sub> = 36/44.7 = 0.806 → −0.93 dB<br><br>
+          若 (C/N)<sub>total</sub> = 7.5 dB<br>
+          E<sub>b</sub>/N<sub>0</sub> = 7.5 + (−0.93) = <strong>6.57 dB</strong><br>
+          所需 E<sub>b</sub>/N<sub>0</sub> ≈ 4.8 dB<br>
+          <strong>余量 = 6.57 − 4.8 = 1.77 dB ✅</strong>
+        </div>
+      </div>
+      <div>
+        <h3>C/N与数据速率的关系</h3>
+        <p>在给定的C/N条件下，可以通过选择不同的MODCOD来调整数据速率：</p>
+        <ul>
+          <li>C/N高 → 选择高阶MODCOD → 高速率</li>
+          <li>C/N低 → 选择低阶MODCOD → 低速率但可靠</li>
+        </ul>
+        <div class="info-box" style="margin-top:12px;">
+          <strong>ACM（自适应编码调制）：</strong>根据实时链路状态（C/N变化）自动调整MODCOD，在保证链路可用性的前提下最大化吞吐量。这是HTS系统的关键技术。
+        </div>
+        <div class="warning-box" style="margin-top:8px;">
+          <strong>⚠️ 实现门限 (Implementation Loss)：</strong>实际设备相对理论门限有0.5~2 dB的实现损耗，链路计算中需计入。
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Slide 41: 链路计算汇总表 -->
+<div class="slide" data-section="链路计算核心架构和计算方法">
+  <div class="slide-header">
+    <span class="section-tag">PART 3 · 计算方法</span>
+    <h2>链路预算表模板 (Link Budget Template)</h2>
+  </div>
+  <div class="slide-content">
+    <table class="data-table" style="font-size:0.82em;">
+      <tr><th style="width:35%">参数</th><th style="width:15%">符号</th><th style="width:10%">单位</th><th style="width:20%">上行</th><th style="width:20%">下行</th></tr>
+      <tr><td>工作频率</td><td>f</td><td>GHz</td><td>14.25</td><td>12.50</td></tr>
+      <tr style="background:#e8eaf6;"><td colspan="5"><strong>发射端参数</strong></td></tr>
+      <tr><td>发射功率</td><td>P<sub>t</sub></td><td>dBW</td><td>17.0</td><td>—</td></tr>
+      <tr><td>发射天线增益</td><td>G<sub>t</sub></td><td>dBi</td><td>46.5</td><td>—</td></tr>
+      <tr><td>馈线损耗</td><td>L<sub>feed</sub></td><td>dB</td><td>0.5</td><td>—</td></tr>
+      <tr><td>EIRP</td><td>—</td><td>dBW</td><td>63.0</td><td>52.0</td></tr>
+      <tr style="background:#e8eaf6;"><td colspan="5"><strong>传播损耗</strong></td></tr>
+      <tr><td>自由空间损耗</td><td>FSL</td><td>dB</td><td>207.1</td><td>205.7</td></tr>
+      <tr><td>大气吸收</td><td>L<sub>atm</sub></td><td>dB</td><td>0.3</td><td>0.2</td></tr>
+      <tr><td>指向损耗</td><td>L<sub>point</sub></td><td>dB</td><td>0.3</td><td>0.5</td></tr>
+      <tr style="background:#e8eaf6;"><td colspan="5"><strong>接收端参数</strong></td></tr>
+      <tr><td>接收G/T</td><td>G/T</td><td>dB/K</td><td>3.0</td><td>19.5</td></tr>
+      <tr style="background:#e8eaf6;"><td colspan="5"><strong>计算结果</strong></td></tr>
+      <tr><td>C/N（晴天）</td><td>—</td><td>dB</td><td>27.9</td><td>14.7</td></tr>
+      <tr style="background:#fce4ec;"><td><strong>总 C/N（含干扰）</strong></td><td>—</td><td>dB</td><td colspan="2"><strong>13.8</strong></td></tr>
+      <tr style="background:#e8f5e9;"><td><strong>链路余量</strong></td><td>—</td><td>dB</td><td colspan="2"><strong>2.1</strong></td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- Slide 42: 频谱效率 -->
+<div class="slide" data-section="链路计算核心架构和计算方法">
+  <div class="slide-header">
+    <span class="section-tag">PART 3 · 计算方法</span>
+    <h2>频谱效率与Shannon极限</h2>
+  </div>
+  <div class="slide-content">
+    <h3>Shannon信道容量</h3>
+    <div class="formula" style="font-size:1.2em;">C = B × log₂(1 + S/N) &nbsp;[bit/s]</div>
+    <div class="formula">η = C/B = log₂(1 + S/N) &nbsp;[bit/s/Hz]</div>
+    <p>Shannon极限给出了在给定SNR条件下的最大频谱效率理论上限。</p>
+    <div class="two-col" style="margin-top:12px;">
+      <div>
+        <h3>DVB-S2 vs Shannon极限</h3>
+        <table class="data-table" style="font-size:0.88em;">
+          <tr><th>MODCOD</th><th>频谱效率</th><th>所需 E<sub>s</sub>/N<sub>0</sub></th><th>距Shannon<br>Gap (dB)</th></tr>
+          <tr><td>QPSK 1/4</td><td>0.49</td><td>−2.35</td><td>~1.2</td></tr>
+          <tr><td>QPSK 1/2</td><td>0.99</td><td>1.00</td><td>~1.0</td></tr>
+          <tr><td>QPSK 3/4</td><td>1.49</td><td>3.10</td><td>~0.9</td></tr>
+          <tr><td>8PSK 3/5</td><td>1.78</td><td>4.73</td><td>~1.3</td></tr>
+          <tr><td>16APSK 3/4</td><td>2.97</td><td>8.97</td><td>~1.5</td></tr>
+          <tr><td>32APSK 4/5</td><td>3.95</td><td>12.73</td><td>~2.0</td></tr>
+        </table>
+      </div>
+      <div>
+        <h3>工程意义</h3>
+        <ul>
+          <li>DVB-S2的LDPC码性能距Shannon极限仅<strong>0.9~2.0 dB</strong></li>
+          <li>意味着<strong>编码增益已接近理论极限</strong></li>
+          <li>进一步提升性能需从<strong>天线、功率、干扰抑制</strong>等方面入手</li>
+        </ul>
+        <div class="key-point" style="margin-top:10px;">
+          <strong>🔑 关键结论：</strong>在现代编码（LDPC）条件下，链路计算中的可用C/N直接决定了最大可达数据速率。提高C/N 3 dB大约可以使频谱效率提升1 bit/s/Hz。
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Slide 43: Part 3 小结 -->
+<div class="slide" data-section="链路计算核心架构和计算方法">
+  <div class="slide-header">
+    <span class="section-tag">PART 3 · 计算方法</span>
+    <h2>Part 3 小结</h2>
+  </div>
+  <div class="slide-content">
+    <div class="highlight-box">
+      <h3 style="border:none;padding:0;margin-bottom:10px;">📋 核心公式回顾</h3>
+      <div class="two-col">
+        <div>
+          <div class="formula" style="font-size:0.9em;">FSL = 92.45 + 20log(f) + 20log(d)</div>
+          <div class="formula" style="font-size:0.9em;">(C/N)<sub>up</sub> = EIRP<sub>ES</sub> + G/T<sub>SAT</sub> + 228.6 − 10log(B) − FSL − L</div>
+          <div class="formula" style="font-size:0.9em;">(C/N)<sub>dn</sub> = EIRP<sub>SAT</sub> + G/T<sub>ES</sub> + 228.6 − 10log(B) − FSL − L</div>
+        </div>
+        <div>
+          <div class="formula" style="font-size:0.9em;">1/(C/N)<sub>T</sub> = Σ 1/(C/N)<sub>i</sub> + Σ 1/(C/I)<sub>j</sub></div>
+          <div class="formula" style="font-size:0.9em;">E<sub>b</sub>/N<sub>0</sub> = C/N + 10log(B/R<sub>b</sub>)</div>
+          <div class="formula" style="font-size:0.9em;">Margin = (C/N)<sub>actual</sub> − (C/N)<sub>req</sub></div>
+        </div>
+      </div>
+    </div>
+    <div class="info-box" style="margin-top:15px;">
+      <strong>🔜 接下来：</strong>Part 4 将通过完整的数值实例，演示晴天条件下的链路计算全过程。
+    </div>
+  </div>
+</div>
+
+<!-- ========== Part 4: 晴天链路计算 ========== -->
+<!-- Slide 44: Part 4 标题页 -->
+<div class="slide section-slide" data-section="晴天链路计算">
+  <div class="part-number">PART 4</div>
+  <h1>晴天链路计算</h1>
+  <div class="section-divider"></div>
+  <div class="section-desc">Clear Sky Link Budget Calculation<br>标准条件 · 完整计算步骤 · 数值实例 · 灵敏度分析</div>
+</div>
+
+<!-- Slide 45: 晴天条件定义 -->
+<div class="slide" data-section="晴天链路计算">
+  <div class="slide-header">
+    <span class="section-tag">PART 4 · 晴天链路</span>
+    <h2>晴天条件定义</h2>
+  </div>
+  <div class="slide-content">
+    <div class="two-col">
+      <div>
+        <h3>晴天基准条件 (Clear Sky)</h3>
+        <ul>
+          <li>无降雨、无降雪</li>
+          <li>标准大气条件（温度、湿度、气压为标准值）</li>
+          <li>仅考虑<strong>固有大气损耗</strong>（氧气和水汽吸收）</li>
+          <li>对流层闪烁按统计平均值处理</li>
+          <li>晴天链路是链路计算的<strong>基准</strong>，雨天链路在此基础上叠加降雨衰减</li>
+        </ul>
+        <h3>晴天需考虑的损耗</h3>
+        <table class="data-table">
+          <tr><th>损耗类型</th><th>来源</th><th>典型值(dB)</th></tr>
+          <tr><td>自由空间损耗</td><td>距离扩展</td><td>195~214</td></tr>
+          <tr><td>大气吸收</td><td>O₂ + H₂O</td><td>0.1~1.5</td></tr>
+          <tr><td>对流层闪烁</td><td>折射率起伏</td><td>0.1~0.5</td></tr>
+          <tr><td>天线指向损耗</td><td>对准偏差</td><td>0.1~1.0</td></tr>
+          <tr><td>极化失配</td><td>极化对准误差</td><td>0.1~0.3</td></tr>
+        </table>
+      </div>
+      <div>
+        <h3>大气吸收损耗</h3>
+        <p><strong>氧气吸收：</strong>在60 GHz附近有强吸收峰；在卫星通信频段（C/Ku/Ka），氧气吸收通常较小。</p>
+        <p><strong>水汽吸收：</strong>在22.235 GHz有吸收线；Ka频段受影响较大。</p>
+        <table class="data-table" style="margin-top:10px;">
+          <tr><th>频段</th><th>大气吸收(dB)<br>仰角30°</th><th>大气吸收(dB)<br>仰角10°</th></tr>
+          <tr><td>C (4 GHz)</td><td>0.06</td><td>0.17</td></tr>
+          <tr><td>C (6 GHz)</td><td>0.07</td><td>0.20</td></tr>
+          <tr><td>Ku (12 GHz)</td><td>0.12</td><td>0.34</td></tr>
+          <tr><td>Ku (14 GHz)</td><td>0.14</td><td>0.39</td></tr>
+          <tr><td>Ka (20 GHz)</td><td>0.38</td><td>1.10</td></tr>
+          <tr><td>Ka (30 GHz)</td><td>0.35</td><td>0.99</td></tr>
+        </table>
+        <p style="font-size:0.85em;color:#666;">数据来源：ITU-R P.676，标准大气条件</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Slide 46: 计算步骤1-3 -->
+<div class="slide" data-section="晴天链路计算">
+  <div class="slide-header">
+    <span class="section-tag">PART 4 · 晴天链路</span>
+    <h2>晴天链路计算 — Step 1~3</h2>
+  </div>
+  <div class="slide-content">
+    <div class="highlight-box">
+      <strong>📌 计算场景：</strong>Ku频段晴天链路，卫星位于110.5°E，地球站位于北京（39.9°N, 116.4°E），2.4m VSAT终端。
+    </div>
+    <div class="two-col" style="margin-top:15px;">
+      <div>
+        <h3>Step 1: 确定基本参数</h3>
+        <table class="data-table" style="font-size:0.9em;">
+          <tr><th>参数</th><th>值</th></tr>
+          <tr><td>卫星轨位</td><td>110.5°E</td></tr>
+          <tr><td>上行频率</td><td>14.25 GHz</td></tr>
+          <tr><td>下行频率</td><td>12.50 GHz</td></tr>
+          <tr><td>地球站纬度</td><td>39.9°N</td></tr>
+          <tr><td>地球站经度</td><td>116.4°E</td></tr>
+          <tr><td>天线口径</td><td>2.4 m</td></tr>
+          <tr><td>天线效率</td><td>0.65</td></tr>
+          <tr><td>载波带宽</td><td>36 MHz</td></tr>
+        </table>
+      </div>
+      <div>
+        <h3>Step 2: 计算仰角和距离</h3>
+        <p>经度差：Δλ = 116.4 − 110.5 = 5.9°</p>
+        <div class="formula" style="font-size:0.9em;">cosψ = cos(39.9°)×cos(5.9°) = 0.7627×0.9947 = 0.7587</div>
+        <div class="formula" style="font-size:0.9em;">El = arctan[(0.7587−0.1513)/√(1−0.7587²)] = arctan[0.6074/0.6514] = <strong>43.0°</strong></div>
+        <p>斜距计算：</p>
+        <div class="formula" style="font-size:0.9em;">d = √(42164²+6371²−2×42164×6371×0.7587) = <strong>37,232 km</strong></div>
+        <h3>Step 3: 自由空间损耗</h3>
+        <div class="formula" style="font-size:0.9em;">FSL<sub>up</sub> = 92.45+20log(14.25)+20log(37232) = 92.45+23.08+91.42 = <strong>206.95 dB</strong></div>
+        <div class="formula" style="font-size:0.9em;">FSL<sub>dn</sub> = 92.45+20log(12.50)+20log(37232) = 92.45+21.94+91.42 = <strong>205.81 dB</strong></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Slide 47: 计算步骤4-6 -->
+<div class="slide" data-section="晴天链路计算">
+  <div class="slide-header">
+    <span class="section-tag">PART 4 · 晴天链路</span>
+    <h2>晴天链路计算 — Step 4~6</h2>
+  </div>
+  <div class="slide-content">
+    <div class="three-col">
+      <div>
+        <h3>Step 4: 大气损耗</h3>
+        <p>仰角 43°（北京）：</p>
+        <table class="data-table" style="font-size:0.85em;">
+          <tr><th>参数</th><th>上行</th><th>下行</th></tr>
+          <tr><td>大气吸收</td><td>0.15 dB</td><td>0.12 dB</td></tr>
+          <tr><td>闪烁损耗</td><td>0.10 dB</td><td>0.08 dB</td></tr>
+          <tr><td>总大气损耗</td><td><strong>0.25 dB</strong></td><td><strong>0.20 dB</strong></td></tr>
+        </table>
+      </div>
+      <div>
+        <h3>Step 5: 天线增益</h3>
+        <p>地球站天线增益（D=2.4m, η=0.65）：</p>
+        <div class="formula" style="font-size:0.85em;">G<sub>up</sub> = 17.8 + 20log(2.4) + 20log(14.25) + 10log(0.65)</div>
+        <div class="formula" style="font-size:0.85em;">= 17.8 + 7.60 + 23.08 − 1.87 = <strong>46.61 dBi</strong></div>
+        <div class="formula" style="font-size:0.85em;">G<sub>dn</sub> = 17.8 + 7.60 + 21.94 − 1.87 = <strong>45.47 dBi</strong></div>
+      </div>
+      <div>
+        <h3>Step 6: 上行C/N</h3>
+        <p>地球站参数：</p>
+        <ul style="font-size:0.9em;">
+          <li>HPA功率: 16W → 12.04 dBW</li>
+          <li>馈线损耗: 0.5 dB</li>
+          <li>EIRP<sub>ES</sub> = 12.04 + 46.61 − 0.5 = <strong>58.15 dBW</strong></li>
+        </ul>
+        <p>卫星参数: G/T<sub>SAT</sub> = 2.5 dB/K</p>
+        <div class="formula" style="font-size:0.85em;">(C/N)<sub>up</sub> = 58.15 + 2.5 + 228.6 − 75.56 − 206.95 − 0.25 − 0.3 = <strong>6.19 dB</strong></div>
+        <p style="font-size:0.85em;">B=36MHz → 10log(36×10⁶) = 75.56 dBHz</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Slide 48: 计算步骤7-9 -->
+<div class="slide" data-section="晴天链路计算">
+  <div class="slide-header">
+    <span class="section-tag">PART 4 · 晴天链路</span>
+    <h2>晴天链路计算 — Step 7~9</h2>
+  </div>
+  <div class="slide-content">
+    <div class="two-col">
+      <div>
+        <h3>Step 7: 下行C/N</h3>
+        <p>卫星参数：</p>
+        <ul style="font-size:0.92em;">
+          <li>卫星EIRP（含OBO）= 50.0 dBW</li>
+          <li>指向损耗 = 0.5 dB</li>
+          <li>有效EIRP = 49.5 dBW</li>
+        </ul>
+        <p>地球站接收：</p>
+        <ul style="font-size:0.92em;">
+          <li>T<sub>sys</sub> = 180 K → 22.55 dBK</li>
+          <li>G/T<sub>ES</sub> = 45.47 − 22.55 = <strong>22.92 dB/K</strong></li>
+        </ul>
+        <div class="formula" style="font-size:0.92em;">(C/N)<sub>dn</sub> = 49.5 + 22.92 + 228.6 − 75.56 − 205.81 − 0.20 − 0.3</div>
+        <div class="formula" style="font-size:0.92em;">= <strong>19.15 dB</strong></div>
+      </div>
+      <div>
+        <h3>Step 8: 总C/N合成</h3>
+        <table class="data-table" style="font-size:0.88em;">
+          <tr><th>分项</th><th>值 (dB)</th><th>线性值</th></tr>
+          <tr><td>(C/N)<sub>up</sub></td><td>6.19</td><td>0.2403</td></tr>
+          <tr><td>(C/N)<sub>dn</sub></td><td>19.15</td><td>0.01217</td></tr>
+          <tr><td>(C/I)<sub>ASI</sub></td><td>26.0</td><td>0.00251</td></tr>
+          <tr><td>(C/I)<sub>xpol</sub></td><td>28.0</td><td>0.00158</td></tr>
+        </table>
+        <p>总和 = 0.2566</p>
+        <div class="formula">(C/N)<sub>total</sub> = −10log₁₀(0.2566) = <strong>5.91 dB</strong></div>
+        <h3>Step 9: 链路余量</h3>
+        <p>MODCOD选择：QPSK 1/2 (所需 E<sub>s</sub>/N<sub>0</sub> = 1.00 dB)</p>
+        <p>含实现损耗(0.8 dB): 所需 = 1.80 dB</p>
+        <div class="formula" style="background:#c8e6c9;">Margin = 5.91 − 1.80 − 10log(1.20) = 5.91 − 1.80 − 0.79 = <strong>3.32 dB ✅</strong></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Slide 49: 计算结果总结 -->
+<div class="slide" data-section="晴天链路计算">
+  <div class="slide-header">
+    <span class="section-tag">PART 4 · 晴天链路</span>
+    <h2>晴天链路计算结果汇总</h2>
+  </div>
+  <div class="slide-content">
+    <div class="highlight-box">
+      <h3 style="border:none;padding:0;">Ku频段晴天链路计算结果 — 北京 VSAT 2.4m</h3>
+    </div>
+    <div class="two-col" style="margin-top:10px;">
+      <div>
+        <table class="data-table" style="font-size:0.88em;">
+          <tr><th>参数</th><th>值</th></tr>
+          <tr><td>仰角</td><td>43.0°</td></tr>
+          <tr><td>斜距</td><td>37,232 km</td></tr>
+          <tr><td>上行FSL</td><td>206.95 dB</td></tr>
+          <tr><td>下行FSL</td><td>205.81 dB</td></tr>
+          <tr><td>地球站EIRP</td><td>58.15 dBW</td></tr>
+          <tr><td>卫星EIRP</td><td>49.5 dBW</td></tr>
+          <tr><td>地球站G/T</td><td>22.92 dB/K</td></tr>
+          <tr><td>上行C/N</td><td>6.19 dB</td></tr>
+          <tr><td>下行C/N</td><td>19.15 dB</td></tr>
+          <tr><td><strong>总C/N</strong></td><td><strong>5.91 dB</strong></td></tr>
+          <tr style="background:#c8e6c9;"><td><strong>链路余量</strong></td><td><strong>3.32 dB ✅</strong></td></tr>
+        </table>
+      </div>
+      <div>
+        <h3>可支持的数据速率</h3>
+        <div class="info-box">
+          <p><strong>MODCOD: QPSK 1/2</strong></p>
+          <p>符号速率: R<sub>s</sub> = 36/(1+0.20) = 30 Msps</p>
+          <p>信息速率: R<sub>b</sub> = 30 × 0.99 = <strong>29.7 Mbps</strong></p>
+        </div>
+        <h3>关键观察</h3>
+        <ul>
+          <li>上行C/N(6.19 dB)是链路瓶颈（VSAT发射功率有限）</li>
+          <li>下行C/N(19.15 dB)充裕</li>
+          <li>若提高VSAT发射功率至50W，上行C/N可提高5 dB</li>
+          <li>晴天余量3.32 dB可用于抵抗降雨衰减</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Slide 50: 灵敏度分析 -->
+<div class="slide" data-section="晴天链路计算">
+  <div class="slide-header">
+    <span class="section-tag">PART 4 · 晴天链路</span>
+    <h2>灵敏度分析</h2>
+  </div>
+  <div class="slide-content">
+    <h3>关键参数对链路余量的影响</h3>
+    <table class="data-table">
+      <tr>
+        <th>参数变化</th><th>对C/N<sub>total</sub>的影响</th><th>说明</th>
+      </tr>
+      <tr><td>HPA功率 ×2 (+3dB)</td><td>+2.1 dB</td><td>上行受限时效果显著</td></tr>
+      <tr><td>天线口径 ×2 (+6dBi)</td><td>+4.8 dB</td><td>同时改善发射和接收</td></tr>
+      <tr><td>卫星EIRP +3 dB</td><td>+0.6 dB</td><td>上行受限时效果有限</td></tr>
+      <tr><td>仰角 43°→20°</td><td>−1.8 dB</td><td>距离增大+大气路径变长</td></tr>
+      <tr><td>频率 Ku→Ka (30/20)</td><td>−8~12 dB</td><td>FSL增大+雨衰增大</td></tr>
+      <tr><td>载波带宽 36→18 MHz</td><td>+3.0 dB</td><td>功率集中，但速率减半</td></tr>
+      <tr><td>LNB噪温 120→60K</td><td>+1.2 dB</td><td>下行受限时有效</td></tr>
+    </table>
+    <div class="key-point" style="margin-top:12px;">
+      <strong>🔑 工程结论：</strong>天线口径是性价比最高的改善手段（同时改善收发两端）；HPA功率的提升在功率受限场景下效果最好；降低带宽可以"换取"更大余量但牺牲速率。
+    </div>
+  </div>
+</div>
+
+<!-- Slide 51: 功率带宽折衷 -->
+<div class="slide" data-section="晴天链路计算">
+  <div class="slide-header">
+    <span class="section-tag">PART 4 · 晴天链路</span>
+    <h2>功率-带宽折衷 (Power-Bandwidth Trade-off)</h2>
+  </div>
+  <div class="slide-content">
+    <div class="two-col">
+      <div>
+        <h3>折衷原理</h3>
+        <p>在转发器资源（功率P和带宽B）固定的条件下：</p>
+        <ul>
+          <li>增加带宽 → C/N降低 → 需要更强FEC → 频谱效率降低</li>
+          <li>减小带宽 → C/N提高 → 可用高阶MODCOD → 频谱效率提高</li>
+          <li>最大吞吐量在某个最优带宽点取得</li>
+        </ul>
+        <h3>最优MODCOD选择</h3>
+        <div class="formula" style="font-size:0.9em;">R<sub>b,max</sub> = max{B × η(MODCOD) : C/N(B) ≥ threshold(MODCOD)}</div>
+        <p>需要遍历不同的带宽和MODCOD组合，寻找吞吐量最大的方案。</p>
+      </div>
+      <div>
+        <h3>计算示例</h3>
+        <table class="data-table" style="font-size:0.85em;">
+          <tr><th>带宽<br>(MHz)</th><th>C/N<br>(dB)</th><th>MODCOD</th><th>η<br>(bit/s/Hz)</th><th>R<sub>b</sub><br>(Mbps)</th></tr>
+          <tr><td>18</td><td>8.9</td><td>8PSK 2/3</td><td>1.98</td><td>29.7</td></tr>
+          <tr><td>27</td><td>7.1</td><td>QPSK 3/4</td><td>1.49</td><td>33.5</td></tr>
+          <tr><td>36</td><td>5.9</td><td>QPSK 1/2</td><td>0.99</td><td>29.7</td></tr>
+          <tr><td>54</td><td>4.1</td><td>QPSK 1/3</td><td>0.66</td><td>29.7</td></tr>
+        </table>
+        <div class="info-box" style="margin-top:10px;">
+          <strong>📌 结论：</strong>本例中27 MHz带宽 + QPSK 3/4为最优配置，吞吐量最大达33.5 Mbps。实际设计中需综合考虑多种因素。
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Slide 52: 不同地点比较 -->
+<div class="slide" data-section="晴天链路计算">
+  <div class="slide-header">
+    <span class="section-tag">PART 4 · 晴天链路</span>
+    <h2>不同地球站位置的链路比较</h2>
+  </div>
+  <div class="slide-content">
+    <h3>同一卫星(110.5°E)、相同地球站配置下的对比</h3>
+    <table class="data-table">
+      <tr>
+        <th>地球站位置</th><th>纬度</th><th>仰角(°)</th><th>距离(km)</th><th>FSL<sub>dn</sub>(dB)</th><th>大气损耗(dB)</th><th>(C/N)<sub>total</sub>(dB)</th><th>余量(dB)</th>
+      </tr>
+      <tr><td>广州</td><td>23.1°N</td><td>62.3</td><td>36,050</td><td>205.52</td><td>0.12</td><td>6.44</td><td>3.85</td></tr>
+      <tr><td>北京</td><td>39.9°N</td><td>43.0</td><td>37,232</td><td>205.81</td><td>0.20</td><td>5.91</td><td>3.32</td></tr>
+      <tr><td>乌鲁木齐</td><td>43.8°N</td><td>31.8</td><td>38,102</td><td>206.02</td><td>0.32</td><td>5.48</td><td>2.89</td></tr>
+      <tr><td>哈尔滨</td><td>45.7°N</td><td>27.6</td><td>38,520</td><td>206.11</td><td>0.40</td><td>5.12</td><td>2.53</td></tr>
+    </table>
+    <div class="warning-box" style="margin-top:12px;">
+      <strong>⚠️ 关键发现：</strong>
+      <ul>
+        <li>仰角从62°降至28°，总C/N下降约<strong>1.3 dB</strong>（FSL增大 + 大气损耗增加）</li>
+        <li>高纬度地区余量更小，降雨可用度更难保证</li>
+        <li>系统设计应基于<strong>覆盖区边缘最差条件</strong>进行</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- Slide 53: Part 4总结 -->
+<div class="slide" data-section="晴天链路计算">
+  <div class="slide-header">
+    <span class="section-tag">PART 4 · 晴天链路</span>
+    <h2>Part 4 小结</h2>
+  </div>
+  <div class="slide-content">
+    <div class="highlight-box">
+      <h3 style="border:none;padding:0;margin-bottom:10px;">📋 晴天链路计算要点</h3>
+      <ul>
+        <li>晴天链路计算是链路设计的<strong>基准</strong>，确定系统在最佳条件下的性能</li>
+        <li>计算9步流程：参数确定 → 几何计算 → FSL → 大气损耗 → 天线增益 → 上行C/N → 下行C/N → 总C/N → 余量</li>
+        <li><strong>灵敏度分析</strong>帮助识别系统瓶颈和最有效的改善手段</li>
+        <li>天线口径是性价比最高的改善参数（同时改善收发两端，增益与口径平方成正比）</li>
+        <li><strong>功率-带宽折衷</strong>是优化吞吐量的关键决策</li>
+        <li>系统设计应基于<strong>覆盖区内最差条件</strong>（边缘仰角）进行</li>
+      </ul>
+    </div>
+    <div class="info-box" style="margin-top:15px;">
+      <strong>🔜 接下来：</strong>Part 5 将讲解如何在晴天基础上考虑降雨衰减，完成雨天链路计算和可用度分析。
+    </div>
+  </div>
+</div>
+
+<!-- ========== Part 5: 降雨衰减链路计算 ========== -->
+<!-- Slide 54: Part 5 标题页 -->
+<div class="slide section-slide" data-section="降雨衰减链路计算">
+  <div class="part-number">PART 5</div>
+  <h1>考虑降雨衰减的<br>链路计算</h1>
+  <div class="section-divider"></div>
+  <div class="section-desc">Rain Attenuation in Link Budget<br>降雨模型 · ITU-R方法 · 雨天计算 · 可用度分析</div>
+</div>
+
+<!-- Slide 55: 降雨衰减概述 -->
+<div class="slide" data-section="降雨衰减链路计算">
+  <div class="slide-header">
+    <span class="section-tag">PART 5 · 降雨衰减</span>
+    <h2>降雨衰减概述</h2>
+  </div>
+  <div class="slide-content">
+    <div class="two-col">
+      <div>
+        <h3>降雨对电波的影响机理</h3>
+        <ul>
+          <li><strong>吸收：</strong>雨滴吸收电磁波能量并转化为热能</li>
+          <li><strong>散射：</strong>雨滴将电磁波散射到其他方向</li>
+          <li>雨滴尺寸与波长可比时（≥10 GHz），衰减显著</li>
+          <li>降雨衰减是Ku/Ka频段链路设计的<strong>最大挑战</strong></li>
+        </ul>
+        <h3>降雨衰减的特点</h3>
+        <ul>
+          <li>随频率增加而<strong>急剧增大</strong>（约f²~f³）</li>
+          <li>随仰角降低而增大（路径变长）</li>
+          <li>具有<strong>统计特性</strong>（按时间百分比给出）</li>
+          <li>降雨同时增加天线噪声温度</li>
+          <li>降雨导致去极化效应（降低XPD）</li>
+        </ul>
+      </div>
+      <div>
+        <h3>不同频段的降雨衰减对比</h3>
+        <table class="data-table">
+          <tr><th>频段</th><th>频率<br>(GHz)</th><th>降雨衰减 (dB)<br>0.01%时间<br>仰角40°</th></tr>
+          <tr><td>C</td><td>4</td><td>0.2~0.5</td></tr>
+          <tr><td>C</td><td>6</td><td>0.5~1.5</td></tr>
+          <tr><td>Ku</td><td>12</td><td>3~8</td></tr>
+          <tr><td>Ku</td><td>14</td><td>5~12</td></tr>
+          <tr><td>Ka</td><td>20</td><td>8~20</td></tr>
+          <tr><td>Ka</td><td>30</td><td>15~40</td></tr>
+        </table>
+        <p style="font-size:0.85em;color:#666;">以中国华北地区（ITU降雨区K~M）为例</p>
+        <div class="key-point" style="margin-top:8px;">
+          <strong>🔑 </strong>C频段基本不受降雨影响；Ka频段30 GHz的降雨衰减可高达40 dB以上，这是Ka-HTS系统设计的核心挑战。
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Slide 56: ITU-R降雨模型 -->
+<div class="slide" data-section="降雨衰减链路计算">
+  <div class="slide-header">
+    <span class="section-tag">PART 5 · 降雨衰减</span>
+    <h2>ITU-R 降雨衰减预测模型</h2>
+  </div>
+  <div class="slide-content">
+    <h3>核心ITU-R建议书</h3>
+    <table class="data-table">
+      <tr><th>建议书</th><th>内容</th><th>用途</th></tr>
+      <tr><td><strong>ITU-R P.837</strong></td><td>全球年平均降雨量分布</td><td>获取R<sub>0.01</sub></td></tr>
+      <tr><td><strong>ITU-R P.838</strong></td><td>降雨比衰减系数</td><td>计算 k 和 α</td></tr>
+      <tr><td><strong>ITU-R P.618</strong></td><td>地-空路径传播预测</td><td>降雨衰减综合计算</td></tr>
+      <tr><td><strong>ITU-R P.839</strong></td><td>雨层高度模型</td><td>计算有效路径长度</td></tr>
+      <tr><td><strong>ITU-R P.676</strong></td><td>气体衰减模型</td><td>大气吸收计算</td></tr>
+      <tr><td><strong>ITU-R P.840</strong></td><td>云雾衰减模型</td><td>非降雨条件衰减</td></tr>
+    </table>
+    <h3 style="margin-top:12px;">计算流程 (ITU-R P.618)</h3>
+    <div class="diagram-flow">
+      <div class="box">获取R<sub>0.01</sub><br>(P.837)</div><span class="arrow">→</span>
+      <div class="box alt">计算比衰减γ<sub>R</sub><br>(P.838)</div><span class="arrow">→</span>
+      <div class="box">有效路径L<sub>eff</sub><br>(P.839)</div><span class="arrow">→</span>
+      <div class="box highlight">降雨衰减A<sub>0.01</sub></div><span class="arrow">→</span>
+      <div class="box alt">其他百分比<br>A<sub>p</sub></div>
+    </div>
+  </div>
+</div>
+
+<!-- Slide 57: 降雨区域与R001 -->
+<div class="slide" data-section="降雨衰减链路计算">
+  <div class="slide-header">
+    <span class="section-tag">PART 5 · 降雨衰减</span>
+    <h2>降雨统计参数 R<sub>0.01</sub></h2>
+  </div>
+  <div class="slide-content">
+    <div class="two-col">
+      <div>
+        <h3>R<sub>0.01</sub> 的含义</h3>
+        <p>在0.01%的年平均时间内超过的降雨强度（mm/h）。即一年中有约53分钟降雨强度超过R<sub>0.01</sub>。</p>
+        <h3>中国主要城市 R<sub>0.01</sub></h3>
+        <table class="data-table" style="font-size:0.9em;">
+          <tr><th>城市</th><th>ITU降雨区</th><th>R<sub>0.01</sub> (mm/h)</th></tr>
+          <tr><td>北京</td><td>K</td><td>42</td></tr>
+          <tr><td>上海</td><td>M</td><td>63</td></tr>
+          <tr><td>广州</td><td>N</td><td>95</td></tr>
+          <tr><td>成都</td><td>J</td><td>35</td></tr>
+          <tr><td>乌鲁木齐</td><td>E</td><td>12</td></tr>
+          <tr><td>哈尔滨</td><td>H</td><td>28</td></tr>
+          <tr><td>海口</td><td>P</td><td>145</td></tr>
+        </table>
+      </div>
+      <div>
+        <h3>雨层高度 (Rain Height)</h3>
+        <p>根据 ITU-R P.839：</p>
+        <div class="formula">h<sub>R</sub> = h₀ + 0.36 &nbsp;[km]</div>
+        <p>h₀ 为0°C等温线高度，与纬度有关。</p>
+        <table class="data-table" style="font-size:0.9em;">
+          <tr><th>纬度范围</th><th>h<sub>R</sub> (km)</th></tr>
+          <tr><td>0°~20°</td><td>5.0~5.2</td></tr>
+          <tr><td>20°~40°</td><td>3.5~5.0</td></tr>
+          <tr><td>40°~60°</td><td>2.5~3.5</td></tr>
+        </table>
+        <div class="info-box" style="margin-top:10px;">
+          <strong>📌 中国特点：</strong>中国南方（广州、海口）降雨强度大，但雨层高度也高；北方降雨强度较小。系统设计需按业务覆盖区内最恶劣的降雨条件进行。
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Slide 58: 比衰减计算 -->
+<div class="slide" data-section="降雨衰减链路计算">
+  <div class="slide-header">
+    <span class="section-tag">PART 5 · 降雨衰减</span>
+    <h2>比衰减与降雨衰减计算</h2>
+  </div>
+  <div class="slide-content">
+    <h3>Step 1: 比衰减计算 (ITU-R P.838)</h3>
+    <div class="formula">γ<sub>R</sub> = k × R<sup>α</sup> &nbsp;[dB/km]</div>
+    <p>系数 k 和 α 取决于频率和极化方式（由ITU-R P.838查表或公式计算）</p>
+    <table class="data-table" style="font-size:0.88em;">
+      <tr><th>频率 (GHz)</th><th>k<sub>H</sub></th><th>α<sub>H</sub></th><th>k<sub>V</sub></th><th>α<sub>V</sub></th><th>γ<sub>R</sub> (dB/km)<br>R=42mm/h, H极化</th></tr>
+      <tr><td>4</td><td>0.000650</td><td>1.121</td><td>0.000591</td><td>1.075</td><td>0.04</td></tr>
+      <tr><td>12</td><td>0.01880</td><td>1.217</td><td>0.01680</td><td>1.200</td><td>1.62</td></tr>
+      <tr><td>14</td><td>0.03670</td><td>1.154</td><td>0.03350</td><td>1.128</td><td>2.73</td></tr>
+      <tr><td>20</td><td>0.07510</td><td>1.099</td><td>0.06910</td><td>1.065</td><td>4.88</td></tr>
+      <tr><td>30</td><td>0.18700</td><td>1.021</td><td>0.16720</td><td>0.990</td><td>9.12</td></tr>
+    </table>
+    <h3>Step 2: 有效路径长度 (Effective Path Length)</h3>
+    <div class="formula">L<sub>S</sub> = (h<sub>R</sub> − h<sub>S</sub>) / sin(El) &nbsp;[km] &nbsp;&nbsp;（当 El ≥ 5°）</div>
+    <p>其中 h<sub>S</sub> 为地球站海拔，h<sub>R</sub> 为雨层高度</p>
+    <h3>Step 3: 总降雨衰减</h3>
+    <div class="formula" style="background:#c5cae9;">A<sub>0.01</sub> = γ<sub>R</sub> × L<sub>eff</sub> = γ<sub>R</sub> × L<sub>S</sub> × r<sub>0.01</sub> &nbsp;[dB]</div>
+    <p>r<sub>0.01</sub> 为路径长度缩减因子（考虑降雨的不均匀性），由P.618给出。</p>
+  </div>
+</div>
+
+<!-- Slide 59: 不同可用度下的衰减 -->
+<div class="slide" data-section="降雨衰减链路计算">
+  <div class="slide-header">
+    <span class="section-tag">PART 5 · 降雨衰减</span>
+    <h2>不同可用度下的降雨衰减</h2>
+  </div>
+  <div class="slide-content">
+    <h3>从 A<sub>0.01</sub> 推算其他时间百分比的衰减 (ITU-R P.618)</h3>
+    <div class="formula">A<sub>p</sub> = A<sub>0.01</sub> × C₁ × p<sup>−(C₂ + C₃ × log₁₀(p))</sup></div>
+    <p>C₁, C₂, C₃ 为与纬度和A<sub>0.01</sub>相关的系数</p>
+    <h3>北京地区Ku频段（12 GHz下行）降雨衰减示例</h3>
+    <table class="data-table">
+      <tr>
+        <th>时间百分比 p(%)</th><th>可用度(%)</th><th>不可用时间<br>(分钟/年)</th><th>A<sub>p</sub> (dB)<br>12 GHz</th><th>A<sub>p</sub> (dB)<br>20 GHz</th><th>A<sub>p</sub> (dB)<br>30 GHz</th>
+      </tr>
+      <tr><td>1.0</td><td>99.0</td><td>5256</td><td>0.5</td><td>1.2</td><td>2.5</td></tr>
+      <tr><td>0.3</td><td>99.7</td><td>1577</td><td>1.8</td><td>3.8</td><td>7.5</td></tr>
+      <tr><td>0.1</td><td>99.9</td><td>526</td><td>3.5</td><td>7.2</td><td>14.5</td></tr>
+      <tr><td>0.05</td><td>99.95</td><td>263</td><td>4.8</td><td>9.8</td><td>20.0</td></tr>
+      <tr><td>0.01</td><td>99.99</td><td>53</td><td>7.2</td><td>15.0</td><td>32.0</td></tr>
+      <tr><td>0.001</td><td>99.999</td><td>5</td><td>12.0</td><td>25.0</td><td>52.0</td></tr>
+    </table>
+    <div class="warning-box" style="margin-top:8px;">
+      <strong>⚠️ </strong>Ka频段30 GHz在99.9%可用度下的衰减可达14.5 dB！这意味着需要14.5 dB的额外链路余量或采用UPC/ACM等抗雨衰技术。
+    </div>
+  </div>
+</div>
+
+<!-- Slide 60: 雨天链路计算实例 -->
+<div class="slide" data-section="降雨衰减链路计算">
+  <div class="slide-header">
+    <span class="section-tag">PART 5 · 降雨衰减</span>
+    <h2>雨天链路计算实例</h2>
+  </div>
+  <div class="slide-content">
+    <div class="highlight-box">
+      <strong>📌 场景：</strong>沿用Part 4的Ku频段链路参数，计算99.7%可用度下的雨天链路。
+    </div>
+    <div class="two-col" style="margin-top:10px;">
+      <div>
+        <h3>降雨衰减参数（北京，仰角43°）</h3>
+        <table class="data-table" style="font-size:0.9em;">
+          <tr><th>参数</th><th>上行(14.25GHz)</th><th>下行(12.5GHz)</th></tr>
+          <tr><td>R<sub>0.01</sub></td><td colspan="2">42 mm/h</td></tr>
+          <tr><td>雨层高度 h<sub>R</sub></td><td colspan="2">3.8 km</td></tr>
+          <tr><td>地站海拔 h<sub>S</sub></td><td colspan="2">0.05 km</td></tr>
+          <tr><td>斜路径 L<sub>S</sub></td><td colspan="2">5.50 km</td></tr>
+          <tr><td>比衰减 γ<sub>R</sub></td><td>3.15 dB/km</td><td>1.82 dB/km</td></tr>
+          <tr><td>A<sub>0.01</sub></td><td>10.2 dB</td><td>5.9 dB</td></tr>
+          <tr><td><strong>A<sub>0.3%</sub></strong></td><td><strong>3.1 dB</strong></td><td><strong>1.8 dB</strong></td></tr>
+        </table>
+      </div>
+      <div>
+        <h3>雨天链路计算 (99.7%可用度)</h3>
+        <table class="data-table" style="font-size:0.88em;">
+          <tr><th>参数</th><th>晴天</th><th>雨天(0.3%)</th></tr>
+          <tr><td>(C/N)<sub>up</sub></td><td>6.19 dB</td><td>3.09 dB</td></tr>
+          <tr><td>(C/N)<sub>dn</sub></td><td>19.15 dB</td><td>17.35 dB</td></tr>
+          <tr><td>(C/N)<sub>total</sub></td><td>5.91 dB</td><td>2.51 dB</td></tr>
+        </table>
+        <div class="formula" style="margin-top:8px;">
+          雨天余量 = 2.51 − 1.80 = <strong>0.71 dB</strong> ⚠️ 余量偏小
+        </div>
+        <div class="warning-box" style="margin-top:8px;">
+          <strong>结论：</strong>在99.7%可用度下，上行雨衰使余量仅为0.71 dB，需要考虑UPC（上行功率控制）来改善。
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Slide 61: 上行功率控制 -->
+<div class="slide" data-section="降雨衰减链路计算">
+  <div class="slide-header">
+    <span class="section-tag">PART 5 · 降雨衰减</span>
+    <h2>上行功率控制 (UPC) 技术</h2>
+  </div>
+  <div class="slide-content">
+    <div class="two-col">
+      <div>
+        <h3>UPC的原理</h3>
+        <p>Uplink Power Control — 通过实时增加地球站发射功率来补偿上行降雨衰减。</p>
+        <ul>
+          <li><strong>开环UPC：</strong>通过监测信标接收电平估计上行雨衰，按频率换算关系调整功率</li>
+          <li><strong>闭环UPC：</strong>通过卫星测量实际接收功率，反馈控制地球站功率</li>
+          <li>UPC范围：通常<strong>3~10 dB</strong></li>
+          <li>需要HPA有足够的功率余量</li>
+        </ul>
+        <h3>UPC效果</h3>
+        <div class="formula">EIRP<sub>UPC</sub> = EIRP<sub>晴天</sub> + ΔP<sub>UPC</sub></div>
+        <p>ΔP<sub>UPC</sub> ≤ min(雨衰量, HPA功率余量)</p>
+      </div>
+      <div>
+        <h3>考虑UPC后的链路计算</h3>
+        <div class="highlight-box">
+          <p><strong>假设UPC范围 = 3 dB：</strong></p>
+          <p>上行雨衰 A<sub>up</sub> = 3.1 dB</p>
+          <p>UPC补偿 = min(3.1, 3.0) = 3.0 dB</p>
+          <p>残余雨衰 = 3.1 − 3.0 = 0.1 dB</p>
+          <br>
+          <p>(C/N)<sub>up,UPC</sub> = 6.19 − 0.1 = <strong>6.09 dB</strong></p>
+          <p>(C/N)<sub>dn,rain</sub> = 19.15 − 1.8 = <strong>17.35 dB</strong></p>
+          <p>(C/N)<sub>total</sub> = <strong>5.73 dB</strong></p>
+          <p>余量 = 5.73 − 1.80 = <strong>3.14 dB ✅</strong></p>
+        </div>
+        <div class="info-box" style="margin-top:10px;">
+          <strong>📌 UPC显著改善了雨天链路性能</strong>，余量从0.71 dB提升到3.14 dB。这也说明了UPC在Ku/Ka频段系统中的重要性。
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Slide 62: 降雨对噪声温度影响 -->
+<div class="slide" data-section="降雨衰减链路计算">
+  <div class="slide-header">
+    <span class="section-tag">PART 5 · 降雨衰减</span>
+    <h2>降雨对系统噪声温度的影响</h2>
+  </div>
+  <div class="slide-content">
+    <h3>降雨引起的噪声温度增加</h3>
+    <p>降雨不仅衰减信号，还会增加接收系统的噪声温度：</p>
+    <div class="formula">T<sub>rain</sub> = T<sub>m</sub> × (1 − 1/A<sub>rain</sub>)</div>
+    <p>其中 T<sub>m</sub> 为降雨媒介等效温度，通常取 <strong>275 K</strong>；A<sub>rain</sub> 为降雨衰减的线性值。</p>
+    <div class="two-col" style="margin-top:10px;">
+      <div>
+        <h3>降雨对G/T的双重影响</h3>
+        <ul>
+          <li><strong>信号衰减 A 降低接收功率：</strong>C减小</li>
+          <li><strong>噪声温度增加：</strong>N增大</li>
+          <li>两个效应叠加，使C/N下降更多</li>
+        </ul>
+        <div class="formula" style="font-size:0.9em;">
+          (G/T)<sub>rain</sub> = G − 10log₁₀(T<sub>sys,clear</sub> + T<sub>rain</sub>)
+        </div>
+        <div class="formula" style="font-size:0.9em;">
+          Δ(G/T) = −A<sub>rain</sub> − 10log₁₀(1 + T<sub>rain</sub>/T<sub>sys,clear</sub>)
+        </div>
+      </div>
+      <div>
+        <h3>计算示例</h3>
+        <table class="data-table" style="font-size:0.88em;">
+          <tr><th>降雨衰减(dB)</th><th>A(线性)</th><th>T<sub>rain</sub>(K)</th><th>C/N额外下降(dB)</th></tr>
+          <tr><td>1.0</td><td>1.259</td><td>56.6</td><td>1.0 + 1.2 = 2.2</td></tr>
+          <tr><td>3.0</td><td>1.995</td><td>137.2</td><td>3.0 + 2.5 = 5.5</td></tr>
+          <tr><td>5.0</td><td>3.162</td><td>187.9</td><td>5.0 + 3.2 = 8.2</td></tr>
+          <tr><td>10.0</td><td>10.00</td><td>247.5</td><td>10.0 + 4.0 = 14.0</td></tr>
+        </table>
+        <p style="font-size:0.85em;">（假设T<sub>sys,clear</sub> = 180 K）</p>
+      </div>
+    </div>
+    <div class="key-point" style="margin-top:8px;">
+      <strong>🔑 </strong>10 dB降雨衰减导致总C/N下降约14 dB（10 dB信号衰减 + 4 dB噪声增加），而非仅10 dB！这在精确链路计算中必须考虑。
+    </div>
+  </div>
+</div>
+
+<!-- Slide 63: 其他大气效应 -->
+<div class="slide" data-section="降雨衰减链路计算">
+  <div class="slide-header">
+    <span class="section-tag">PART 5 · 降雨衰减</span>
+    <h2>其他大气效应</h2>
+  </div>
+  <div class="slide-content">
+    <div class="two-col">
+      <div>
+        <h3>云雾衰减 (Cloud/Fog Attenuation)</h3>
+        <ul>
+          <li>由水滴粒子（直径 < 0.01 cm）引起</li>
+          <li>参照 ITU-R P.840 计算</li>
+          <li>典型值：Ka频段 0.5~2 dB</li>
+          <li>相比降雨衰减通常较小</li>
+        </ul>
+        <h3>大气闪烁 (Tropospheric Scintillation)</h3>
+        <ul>
+          <li>对流层折射率快速起伏引起</li>
+          <li>参照 ITU-R P.618 Annex 计算</li>
+          <li>低仰角时影响更大（仰角<10°）</li>
+          <li>表现为信号的快速起伏（秒级）</li>
+          <li>Ku频段典型值：0.1~0.5 dB (RMS)</li>
+        </ul>
+      </div>
+      <div>
+        <h3>去极化效应 (Depolarization)</h3>
+        <ul>
+          <li>降雨导致圆极化→椭圆极化</li>
+          <li>降低交叉极化隔离度（XPD）</li>
+          <li>影响频率复用系统的干扰</li>
+        </ul>
+        <div class="formula" style="font-size:0.9em;">
+          XPD<sub>rain</sub> = U − V(f) × log₁₀(A<sub>co</sub>)
+        </div>
+        <p>A<sub>co</sub>为共极化衰减，U和V为频率相关系数</p>
+        <h3>对流层延迟</h3>
+        <ul>
+          <li>电波穿过大气层时速度降低</li>
+          <li>导致信号到达时间增加</li>
+          <li>对通信影响较小（已含在系统设计中）</li>
+          <li>对测距/定位有影响</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Slide 64: 链路可用度 -->
+<div class="slide" data-section="降雨衰减链路计算">
+  <div class="slide-header">
+    <span class="section-tag">PART 5 · 降雨衰减</span>
+    <h2>链路可用度计算</h2>
+  </div>
+  <div class="slide-content">
+    <h3>可用度定义</h3>
+    <div class="formula">可用度 = (1 − p/100) × 100% &nbsp;&nbsp;（p 为不可用时间百分比）</div>
+    <div class="two-col" style="margin-top:10px;">
+      <div>
+        <h3>不同业务的可用度要求</h3>
+        <table class="data-table" style="font-size:0.9em;">
+          <tr><th>业务类型</th><th>年可用度</th><th>不可用时间</th></tr>
+          <tr><td>骨干传输</td><td>99.99%</td><td>53 分钟/年</td></tr>
+          <tr><td>企业VSAT</td><td>99.7%~99.9%</td><td>4.4~26 小时/年</td></tr>
+          <tr><td>DTH广播</td><td>99.5%~99.7%</td><td>26~44 小时/年</td></tr>
+          <tr><td>消费宽带</td><td>99.0%~99.5%</td><td>44~88 小时/年</td></tr>
+          <tr><td>应急通信</td><td>99.9%~99.99%</td><td>53分钟~8.8小时</td></tr>
+        </table>
+      </div>
+      <div>
+        <h3>年可用度 vs 月最差可用度</h3>
+        <ul>
+          <li><strong>年平均可用度：</strong>全年统计的平均值</li>
+          <li><strong>月最差可用度：</strong>一年中最差月份的可用度</li>
+          <li>中国大部分地区<strong>6~8月</strong>为降雨最多的月份</li>
+          <li>月最差可用度通常比年平均差<strong>3~5倍</strong></li>
+          <li>某些合同以月最差可用度为约束</li>
+        </ul>
+        <div class="key-point" style="margin-top:10px;">
+          <strong>🔑 可用度设计准则：</strong>
+          <ul>
+            <li>根据业务需求确定目标可用度</li>
+            <li>反推允许的最大降雨衰减</li>
+            <li>确定是否需要UPC、ACM、站点分集等抗雨衰措施</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Slide 65: 抗雨衰技术 -->
+<div class="slide" data-section="降雨衰减链路计算">
+  <div class="slide-header">
+    <span class="section-tag">PART 5 · 降雨衰减</span>
+    <h2>抗雨衰技术汇总</h2>
+  </div>
+  <div class="slide-content">
+    <table class="data-table">
+      <tr>
+        <th>技术</th><th>原理</th><th>增益(dB)</th><th>适用场景</th><th>缺点</th>
+      </tr>
+      <tr>
+        <td><strong>UPC</strong><br>上行功率控制</td>
+        <td>增加发射功率补偿衰减</td><td>3~10</td>
+        <td>上行链路</td><td>需要HPA功率余量</td>
+      </tr>
+      <tr>
+        <td><strong>ACM</strong><br>自适应编码调制</td>
+        <td>降低MODCOD以降低门限</td><td>最大~15</td>
+        <td>所有链路</td><td>吞吐量降低</td>
+      </tr>
+      <tr>
+        <td><strong>站点分集</strong><br>Site Diversity</td>
+        <td>多站冗余，选择晴天站</td><td>10~20</td>
+        <td>信关站</td><td>需要多个站点</td>
+      </tr>
+      <tr>
+        <td><strong>增大天线</strong></td>
+        <td>增加天线增益</td><td>按口径比²</td>
+        <td>所有场景</td><td>成本和尺寸增加</td>
+      </tr>
+      <tr>
+        <td><strong>增大链路余量</strong></td>
+        <td>设计时留足余量</td><td>直接</td>
+        <td>所有场景</td><td>浪费晴天资源</td>
+      </tr>
+      <tr>
+        <td><strong>频段选择</strong></td>
+        <td>使用低频段(C)</td><td>N/A</td>
+        <td>高可用度需求</td><td>带宽受限</td>
+      </tr>
+    </table>
+    <div class="info-box" style="margin-top:10px;">
+      <strong>💡 HTS系统典型方案：</strong>用户链路（Ka）采用<strong>ACM</strong>自适应调整；信关站链路（Ka/Q-V）采用<strong>站点分集+UPC</strong>双重保护。中星16号HTS系统的信关站即采用了站点分集技术。
+    </div>
+  </div>
+</div>
+
+<!-- Slide 66: Ka频段链路实例 -->
+<div class="slide" data-section="降雨衰减链路计算">
+  <div class="slide-header">
+    <span class="section-tag">PART 5 · 降雨衰减</span>
+    <h2>Ka频段雨天链路计算实例</h2>
+  </div>
+  <div class="slide-content">
+    <div class="highlight-box">
+      <strong>📌 场景：</strong>Ka频段HTS卫星，用户终端0.75m，信关站9m，北京地区，99.7%可用度。
+    </div>
+    <div class="two-col" style="margin-top:8px;">
+      <div>
+        <h3>前向链路（信关站→用户）</h3>
+        <table class="data-table" style="font-size:0.82em;">
+          <tr><th>参数</th><th>上行(30GHz)</th><th>下行(20GHz)</th></tr>
+          <tr><td>EIRP</td><td>78.0 dBW</td><td>56.0 dBW</td></tr>
+          <tr><td>FSL</td><td>213.6 dB</td><td>210.1 dB</td></tr>
+          <tr><td>晴天大气损耗</td><td>0.35 dB</td><td>0.38 dB</td></tr>
+          <tr><td>G/T接收</td><td>5.0 dB/K</td><td>13.5 dB/K</td></tr>
+          <tr><td>晴天C/N</td><td>28.6 dB</td><td>12.8 dB</td></tr>
+          <tr><td>降雨衰减(0.3%)</td><td>5.2 dB(UPC补3)</td><td>2.8 dB</td></tr>
+          <tr><td>雨天C/N</td><td>26.4 dB</td><td>9.1 dB</td></tr>
+          <tr style="background:#fce4ec;"><td colspan="2"><strong>总C/N(雨天)</strong></td><td><strong>8.8 dB</strong></td></tr>
+        </table>
+        <p>MODCOD选择：QPSK 3/4 (门限 3.1 dB)</p>
+        <p><strong>余量 = 8.8 − 3.1 − 0.8 = 4.9 dB ✅</strong></p>
+      </div>
+      <div>
+        <h3>返向链路（用户→信关站）</h3>
+        <table class="data-table" style="font-size:0.82em;">
+          <tr><th>参数</th><th>上行(30GHz)</th><th>下行(20GHz)</th></tr>
+          <tr><td>EIRP</td><td>44.0 dBW</td><td>56.0 dBW</td></tr>
+          <tr><td>FSL</td><td>213.6 dB</td><td>210.1 dB</td></tr>
+          <tr><td>G/T接收</td><td>5.0 dB/K</td><td>37.0 dB/K</td></tr>
+          <tr><td>晴天C/N</td><td>−5.0 dB(窄带)</td><td>36.5 dB</td></tr>
+          <tr><td>降雨衰减(0.3%)</td><td>5.2 dB</td><td>2.8 dB</td></tr>
+          <tr><td>雨天C/N</td><td>−10.2 dB</td><td>33.7 dB</td></tr>
+        </table>
+        <p style="font-size:0.85em;">注：返向为窄带TDMA，载波带宽小（如1 MHz），C/N按窄带重新计算。实际C/N ≈ <strong>5.3 dB</strong>（1MHz带宽）</p>
+        <div class="info-box" style="margin-top:8px;">
+          <strong>💡 </strong>Ka HTS的返向链路通常是系统瓶颈，需要ACM动态调整速率。
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Slide 67: Part 5小结 -->
+<div class="slide" data-section="降雨衰减链路计算">
+  <div class="slide-header">
+    <span class="section-tag">PART 5 · 降雨衰减</span>
+    <h2>Part 5 小结</h2>
+  </div>
+  <div class="slide-content">
+    <div class="highlight-box">
+      <h3 style="border:none;padding:0;margin-bottom:10px;">📋 降雨衰减链路计算要点</h3>
+      <ul>
+        <li>降雨衰减是Ku/Ka频段链路设计的<strong>核心挑战</strong>，C频段基本不受影响</li>
+        <li>ITU-R P.618/P.837/P.838提供了完整的<strong>降雨衰减预测方法</strong></li>
+        <li>降雨衰减 = 比衰减 × 有效路径长度：<strong>A = γ<sub>R</sub> × L<sub>eff</sub></strong></li>
+        <li>降雨同时<strong>衰减信号并增加噪声温度</strong>，C/N下降比纯衰减更大</li>
+        <li><strong>UPC</strong>是补偿上行雨衰的有效手段（典型3~10 dB）</li>
+        <li><strong>ACM</strong>是应对雨天的核心技术，可将门限降低15 dB以上</li>
+        <li>Ka频段信关站通常需要<strong>站点分集</strong>来保证高可用度</li>
+        <li>系统设计应基于目标可用度<strong>反推允许的降雨衰减</strong></li>
+      </ul>
+    </div>
+    <div class="info-box" style="margin-top:12px;">
+      <strong>🔜 接下来：</strong>Part 6 将讲解不同卫星通信方案（DTH、SCPC、VSAT、信关站、DTP）的链路设计特点。
+    </div>
+  </div>
+</div>
+
+<!-- ========== Part 6: 卫星通信方案设计 ========== -->
+<!-- Slide 68: Part 6 标题页 -->
+<div class="slide section-slide" data-section="卫星通信方案设计">
+  <div class="part-number">PART 6</div>
+  <h1>卫星通信方案设计</h1>
+  <div class="section-divider"></div>
+  <div class="section-desc">Satellite Communication System Design<br>广播DTH · SCPC · VSAT · 信关站 · DTP灵活载荷</div>
+</div>
+
+<!-- Slide 69: DTH广播系统 -->
+<div class="slide" data-section="卫星通信方案设计">
+  <div class="slide-header">
+    <span class="section-tag">PART 6 · 方案设计</span>
+    <h2>广播模式 — DTH直播星系统</h2>
+  </div>
+  <div class="slide-content">
+    <div class="two-col">
+      <div>
+        <h3>DTH系统特点</h3>
+        <p>Direct-To-Home：卫星电视信号直接到达用户家庭接收天线。</p>
+        <ul>
+          <li>点对多点广播，用户数不影响卫星资源</li>
+          <li>高功率卫星EIRP → 小型用户天线</li>
+          <li>单载波工作为主，频谱效率高</li>
+          <li>DVB-S2标准，ACM/VCM可选</li>
+        </ul>
+        <h3>中星9B典型参数</h3>
+        <table class="data-table" style="font-size:0.88em;">
+          <tr><th>参数</th><th>值</th></tr>
+          <tr><td>轨位</td><td>92.2°E</td></tr>
+          <tr><td>频段</td><td>Ku (BSS: 12.2~12.7 GHz)</td></tr>
+          <tr><td>转发器数量</td><td>30个（54 MHz）</td></tr>
+          <tr><td>卫星EIRP</td><td>52~56 dBW</td></tr>
+          <tr><td>覆盖</td><td>中国全境</td></tr>
+          <tr><td>用户天线</td><td>0.35~0.45 m</td></tr>
+        </table>
+      </div>
+      <div>
+        <h3>DTH链路设计要点</h3>
+        <ul>
+          <li><strong>星上功率分配：</strong>每个转发器独立TWTA</li>
+          <li><strong>覆盖区EIRP：</strong>卫星天线波束成型，保证覆盖区边缘EIRP足够</li>
+          <li><strong>接收天线选择：</strong>由卫星EIRP和所需C/N决定最小口径</li>
+        </ul>
+        <div class="formula" style="font-size:0.9em;">
+          D<sub>min</sub> = λ/π × √(4πkT<sub>sys</sub>B × 10<sup>(C/N)<sub>req</sub>/10</sup> / (EIRP × (4πd/λ)⁻²))
+        </div>
+        <h3>典型DTH链路预算</h3>
+        <div class="highlight-box">
+          <p>EIRP<sub>sat</sub> = 53 dBW (边缘)</p>
+          <p>FSL = 205.5 dB, 大气 = 0.2 dB</p>
+          <p>G/T<sub>user</sub>(0.45m) = 12.8 dB/K</p>
+          <p>(C/N)<sub>dn</sub> = 53+12.8+228.6-75.6-205.5-0.2 = <strong>13.1 dB</strong></p>
+          <p>QPSK 3/4需要约3.1 dB → 余量 <strong>10.0 dB</strong></p>
+          <p>可支持 8PSK 甚至 16APSK</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Slide 70: DTH功率覆盖 -->
+<div class="slide" data-section="卫星通信方案设计">
+  <div class="slide-header">
+    <span class="section-tag">PART 6 · 方案设计</span>
+    <h2>DTH覆盖区EIRP设计</h2>
+  </div>
+  <div class="slide-content">
+    <div class="two-col">
+      <div>
+        <h3>卫星天线波束设计</h3>
+        <ul>
+          <li><strong>成型波束：</strong>根据服务区域形状设计天线方向图</li>
+          <li><strong>EIRP分布：</strong>波束中心最大，边缘衰减</li>
+          <li>典型边缘衰减：3~4 dB（相对中心）</li>
+          <li>设计目标：<strong>覆盖区边缘EIRP满足最小天线接收要求</strong></li>
+        </ul>
+        <h3>覆盖设计流程</h3>
+        <ol class="step-list">
+          <li>确定用户终端最小天线口径</li>
+          <li>计算所需最小接收C/N（含余量）</li>
+          <li>反推所需卫星EIRP（覆盖区边缘）</li>
+          <li>设计卫星天线波束方向图</li>
+          <li>确定转发器功率和数量</li>
+        </ol>
+      </div>
+      <div>
+        <h3>用户天线口径 vs 卫星EIRP</h3>
+        <table class="data-table">
+          <tr><th>天线口径(m)</th><th>G/T(dB/K)</th><th>所需EIRP(dBW)</th></tr>
+          <tr><td>0.35</td><td>10.1</td><td>55.0</td></tr>
+          <tr><td>0.45</td><td>12.8</td><td>52.3</td></tr>
+          <tr><td>0.60</td><td>15.3</td><td>49.8</td></tr>
+          <tr><td>0.75</td><td>17.2</td><td>47.9</td></tr>
+          <tr><td>0.90</td><td>18.8</td><td>46.3</td></tr>
+        </table>
+        <p style="font-size:0.85em;">（基于Ku频段12.5GHz，QPSK 3/4，99.7%可用度）</p>
+        <div class="info-box" style="margin-top:10px;">
+          <strong>📌 设计权衡：</strong>天线越小 → 用户成本越低、安装越方便；但要求卫星EIRP越高 → 卫星成本更高。最优方案取决于用户数量和卫星成本分摊。
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Slide 71: SCPC系统 -->
+<div class="slide" data-section="卫星通信方案设计">
+  <div class="slide-header">
+    <span class="section-tag">PART 6 · 方案设计</span>
+    <h2>SCPC单路单载波模式</h2>
+  </div>
+  <div class="slide-content">
+    <div class="two-col">
+      <div>
+        <h3>SCPC系统特点</h3>
+        <p>Single Channel Per Carrier — 每个载波承载一路业务。</p>
+        <ul>
+          <li>采用<strong>频分多址 (FDMA)</strong></li>
+          <li>每个载波独占一段频率</li>
+          <li>适合<strong>固定速率、持续连接</strong>的业务</li>
+          <li>频率利用效率高（各载波紧密排列）</li>
+          <li>多个载波共享转发器，需要功放回退</li>
+        </ul>
+        <h3>SCPC链路计算要点</h3>
+        <ul>
+          <li>转发器中每个载波分配的功率：
+            <div class="formula" style="font-size:0.85em;">P<sub>carrier</sub> = P<sub>sat</sub> × (B<sub>carrier</sub>/B<sub>xp</sub>)</div>
+          </li>
+          <li>需要考虑多载波OBO（通常3~6 dB）</li>
+          <li>需要考虑互调C/IM</li>
+        </ul>
+      </div>
+      <div>
+        <h3>典型应用场景</h3>
+        <ul>
+          <li>🏢 企业专线（语音+数据）</li>
+          <li>📰 新闻采集 SNG (Satellite News Gathering)</li>
+          <li>🌊 海事/航空宽带</li>
+          <li>🛡️ 军事通信</li>
+        </ul>
+        <h3>SCPC功率和带宽计算示例</h3>
+        <div class="highlight-box">
+          <p><strong>场景：</strong>36 MHz转发器, 6个SCPC载波</p>
+          <p>每载波带宽: 5 MHz (含保护间隔)</p>
+          <p>OBO = 5 dB (多载波)</p>
+          <p>卫星EIRP<sub>sat</sub> = 52 dBW</p>
+          <p>每载波EIRP = 52 − 5 − 10log(6) = 52−5−7.8 = <strong>39.2 dBW</strong></p>
+          <p>R<sub>s</sub> = 4.17/(1+0.2) = 3.47 Msps</p>
+          <p>QPSK 3/4: R<sub>b</sub> = 3.47×1.49 = <strong>5.17 Mbps</strong></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Slide 72: VSAT系统架构 -->
+<div class="slide" data-section="卫星通信方案设计">
+  <div class="slide-header">
+    <span class="section-tag">PART 6 · 方案设计</span>
+    <h2>VSAT系统架构</h2>
+  </div>
+  <div class="slide-content">
+    <div class="two-col">
+      <div>
+        <h3>VSAT系统概述</h3>
+        <p>Very Small Aperture Terminal — 甚小口径终端</p>
+        <ul>
+          <li>天线口径: 0.6~2.4m</li>
+          <li>典型功放: 1~4W (Ku), 2~8W (Ka)</li>
+          <li>广泛用于企业网、远程教育、政务等</li>
+        </ul>
+        <h3>网络拓扑</h3>
+        <ul>
+          <li><strong>星形网 (Star)：</strong>
+            <ul>
+              <li>Hub站（信关站）为中心</li>
+              <li>所有VSAT通过Hub中转</li>
+              <li>前向链路: Hub→卫星→VSAT (TDM)</li>
+              <li>返向链路: VSAT→卫星→Hub (TDMA/MF-TDMA)</li>
+              <li>效率高，VSAT成本低</li>
+            </ul>
+          </li>
+          <li><strong>网状网 (Mesh)：</strong>VSAT直接互通，无需Hub，双跳时延但灵活</li>
+        </ul>
+      </div>
+      <div>
+        <h3>VSAT系统技术标准</h3>
+        <ul>
+          <li><strong>前向链路：</strong>DVB-S2/S2X (TDM广播)</li>
+          <li><strong>返向链路：</strong>DVB-RCS2 (MF-TDMA)</li>
+          <li>支持 ACM 自适应编码调制</li>
+          <li>支持 带宽按需分配 (BoD)</li>
+        </ul>
+        <h3>VSAT典型系统参数</h3>
+        <table class="data-table" style="font-size:0.88em;">
+          <tr><th>参数</th><th>Ku频段</th><th>Ka频段</th></tr>
+          <tr><td>天线口径</td><td>1.2~2.4m</td><td>0.6~1.2m</td></tr>
+          <tr><td>功放功率</td><td>2~4 W</td><td>2~8 W</td></tr>
+          <tr><td>前向速率</td><td>10~100 Mbps</td><td>50~500 Mbps</td></tr>
+          <tr><td>返向速率</td><td>128k~4 Mbps</td><td>512k~20 Mbps</td></tr>
+          <tr><td>LNB噪温</td><td>~120 K</td><td>~200 K</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Slide 73: VSAT前向链路 -->
+<div class="slide" data-section="卫星通信方案设计">
+  <div class="slide-header">
+    <span class="section-tag">PART 6 · 方案设计</span>
+    <h2>VSAT前向链路设计</h2>
+  </div>
+  <div class="slide-content">
+    <div class="two-col">
+      <div>
+        <h3>前向链路结构</h3>
+        <div class="diagram-flow">
+          <div class="box">Hub站<br>发射</div><span class="arrow">→</span>
+          <div class="box highlight">🛰️ 卫星<br>转发</div><span class="arrow">→</span>
+          <div class="box alt">多个VSAT<br>接收</div>
+        </div>
+        <ul style="margin-top:10px;">
+          <li>Hub站大口径天线(4.5~9m) → 高EIRP</li>
+          <li>TDM广播，所有VSAT接收同一载波</li>
+          <li>通常一个载波占一个转发器（或部分）</li>
+          <li>信关站上行通常不是瓶颈</li>
+          <li><strong>下行到VSAT是关键环节</strong></li>
+        </ul>
+      </div>
+      <div>
+        <h3>前向链路预算示例（Ku频段）</h3>
+        <div class="highlight-box" style="font-size:0.88em;">
+          <p><strong>Hub站：</strong>7.3m天线, EIRP = 72 dBW</p>
+          <p><strong>卫星：</strong>EIRP = 50 dBW (OBO=2dB)</p>
+          <p><strong>VSAT：</strong>1.2m天线, G/T = 20.5 dB/K</p>
+          <p><strong>载波：</strong>36 MHz, DVB-S2</p>
+          <hr style="margin:8px 0;">
+          <p>(C/N)<sub>up</sub> = 72 + 3.0 + 228.6 − 75.6 − 207.0 − 0.5 = <strong>20.5 dB</strong></p>
+          <p>(C/N)<sub>dn</sub> = 50 + 20.5 + 228.6 − 75.6 − 205.8 − 0.3 = <strong>17.4 dB</strong></p>
+          <p>(C/N)<sub>total</sub> ≈ <strong>15.8 dB</strong></p>
+          <p>可支持: 8PSK 2/3 (η≈1.98, 门限~5.2 dB)</p>
+          <p>信息速率: 30×1.98 = <strong>59.4 Mbps</strong></p>
+          <p>余量: 15.8 − 5.2 − 0.8 = <strong>9.8 dB</strong></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Slide 74: VSAT返向链路 -->
+<div class="slide" data-section="卫星通信方案设计">
+  <div class="slide-header">
+    <span class="section-tag">PART 6 · 方案设计</span>
+    <h2>VSAT返向链路设计</h2>
+  </div>
+  <div class="slide-content">
+    <div class="two-col">
+      <div>
+        <h3>返向链路结构</h3>
+        <div class="diagram-flow">
+          <div class="box alt">VSAT<br>发射</div><span class="arrow">→</span>
+          <div class="box highlight">🛰️ 卫星<br>转发</div><span class="arrow">→</span>
+          <div class="box">Hub站<br>接收</div>
+        </div>
+        <ul style="margin-top:10px;">
+          <li>VSAT功率小、天线小 → EIRP有限</li>
+          <li>MF-TDMA多址：多个VSAT共享返向带宽</li>
+          <li><strong>上行链路是瓶颈</strong>（VSAT发射功率有限）</li>
+          <li>Hub站大天线G/T高 → 下行不是问题</li>
+          <li>返向速率通常远小于前向速率</li>
+        </ul>
+      </div>
+      <div>
+        <h3>返向链路预算示例</h3>
+        <div class="highlight-box" style="font-size:0.88em;">
+          <p><strong>VSAT：</strong>1.2m天线, HPA=2W(3dBW), G<sub>t</sub>=43.5dBi</p>
+          <p>EIRP<sub>VSAT</sub> = 3 + 43.5 − 0.5 = <strong>46.0 dBW</strong></p>
+          <p><strong>载波带宽：</strong>1 MHz (MF-TDMA burst)</p>
+          <hr style="margin:8px 0;">
+          <p>(C/N)<sub>up</sub> = 46.0 + 3.0 + 228.6 − 60.0 − 207.0 − 0.5 = <strong>10.1 dB</strong></p>
+          <p>(C/N)<sub>dn</sub> = 50 + 35.0 + 228.6 − 60.0 − 205.8 − 0.3 = <strong>47.5 dB</strong></p>
+          <p>(C/N)<sub>total</sub> ≈ <strong>10.1 dB</strong>（上行主导）</p>
+          <p>QPSK 1/2 (门限~1.0 dB): 余量 = 10.1−1.0−0.8 = <strong>8.3 dB</strong></p>
+          <p>信息速率 = 0.83 × 0.99 = <strong>0.82 Mbps</strong></p>
+        </div>
+        <div class="info-box" style="margin-top:8px;">
+          <strong>📌 </strong>返向单载波0.82 Mbps，但MF-TDMA多VSAT分时共享，统计复用后可支持大量用户。
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Slide 75: 信关站模式 -->
+<div class="slide" data-section="卫星通信方案设计">
+  <div class="slide-header">
+    <span class="section-tag">PART 6 · 方案设计</span>
+    <h2>信关站 (Gateway) 模式</h2>
+  </div>
+  <div class="slide-content">
+    <div class="two-col">
+      <div>
+        <h3>信关站的功能和特点</h3>
+        <ul>
+          <li><strong>连接卫星网络与地面核心网</strong>的关键节点</li>
+          <li>大口径天线：7~13m（Ku/Ka）</li>
+          <li>高功率发射：100~500W</li>
+          <li>低噪声接收：G/T > 35 dB/K</li>
+          <li>冗余设计：1+1或N+1热备份</li>
+          <li>通常位于降雨较少的地区</li>
+        </ul>
+        <h3>大口径天线优势</h3>
+        <ul>
+          <li>发射增益高 → EIRP大（补偿上行雨衰）</li>
+          <li>接收增益高 → G/T大（接收灵敏度高）</li>
+          <li>波束窄 → 邻星干扰小</li>
+          <li>波束窄 → 对其他系统干扰也小</li>
+        </ul>
+      </div>
+      <div>
+        <h3>HTS系统中的信关站设计</h3>
+        <p>高通量卫星(HTS)采用<strong>多点波束频率复用</strong>，信关站是系统的"汇聚点"：</p>
+        <div class="highlight-box">
+          <strong>HTS信关站设计要点：</strong>
+          <ul>
+            <li>每个信关站服务多个用户波束</li>
+            <li>信关站链路通常使用Ka或Q/V频段</li>
+            <li>需要极高可用度（99.9%~99.99%）</li>
+            <li>站点分集（Site Diversity）是标配</li>
+            <li>信关站间距 > 降雨相关距离(~30km)</li>
+          </ul>
+        </div>
+        <h3>中星16号HTS信关站</h3>
+        <ul>
+          <li>频段：Ka (30/20 GHz)</li>
+          <li>天线：7.3m / 9m</li>
+          <li>站点分集：备用信关站</li>
+          <li>总容量：约20 Gbps</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Slide 76: DTP铰链模式 -->
+<div class="slide" data-section="卫星通信方案设计">
+  <div class="slide-header">
+    <span class="section-tag">PART 6 · 方案设计</span>
+    <h2>DTP数字透明处理 — 铰链模式</h2>
+  </div>
+  <div class="slide-content">
+    <div class="two-col">
+      <div>
+        <h3>DTP转发器工作原理</h3>
+        <p>Digital Transparent Processor</p>
+        <div class="diagram-flow" style="margin:10px 0;">
+          <div class="box">接收<br>ADC</div><span class="arrow">→</span>
+          <div class="box highlight">数字<br>信道化</div><span class="arrow">→</span>
+          <div class="box alt">灵活<br>路由</div><span class="arrow">→</span>
+          <div class="box highlight">功率<br>分配</div><span class="arrow">→</span>
+          <div class="box">DAC<br>发射</div>
+        </div>
+        <ul>
+          <li>在数字域进行滤波、路由，但<strong>不解调</strong></li>
+          <li>可灵活配置波束间连接关系</li>
+          <li>可动态调整每个波束的带宽和功率</li>
+          <li>信号仍是"透明"的（不改变调制格式）</li>
+        </ul>
+      </div>
+      <div>
+        <h3>铰链模式 (Hinge/Bent-pipe with DP)</h3>
+        <ul>
+          <li><strong>信关站链路（馈电链路）：</strong>
+            <ul>
+              <li>信关站 ↔ 卫星，使用Q/V或Ka频段</li>
+              <li>大天线、高功率，但雨衰大</li>
+            </ul>
+          </li>
+          <li><strong>用户链路（服务链路）：</strong>
+            <ul>
+              <li>卫星 ↔ 用户终端，使用Ka/Ku频段</li>
+              <li>小天线、低功率</li>
+            </ul>
+          </li>
+        </ul>
+        <h3>链路计算特点</h3>
+        <div class="warning-box">
+          <strong>DTP链路计算注意事项：</strong>
+          <ul>
+            <li>上行和下行可能在不同波束/频段</li>
+            <li>每条"铰链"链路需独立计算</li>
+            <li>卫星增益/功率可按需分配</li>
+            <li>需考虑DTP内部的量化噪声和处理损耗</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Slide 77: 灵活载荷 -->
+<div class="slide" data-section="卫星通信方案设计">
+  <div class="slide-header">
+    <span class="section-tag">PART 6 · 方案设计</span>
+    <h2>灵活载荷的链路计算</h2>
+  </div>
+  <div class="slide-content">
+    <div class="two-col">
+      <div>
+        <h3>灵活载荷vs传统载荷</h3>
+        <table class="data-table" style="font-size:0.88em;">
+          <tr><th>特性</th><th>传统转发器</th><th>灵活载荷(DTP)</th></tr>
+          <tr><td>波束连接</td><td>固定</td><td>可重配置</td></tr>
+          <tr><td>带宽分配</td><td>固定</td><td>动态调整</td></tr>
+          <tr><td>功率分配</td><td>固定</td><td>动态分配</td></tr>
+          <tr><td>覆盖调整</td><td>不可</td><td>部分可调</td></tr>
+          <tr><td>链路计算</td><td>确定性</td><td>需按配置计算</td></tr>
+          <tr><td>代表卫星</td><td>传统GEO</td><td>中星26、ViaSat-3</td></tr>
+        </table>
+      </div>
+      <div>
+        <h3>波束间路由与功率灵活分配</h3>
+        <ul>
+          <li><strong>需求驱动：</strong>根据实时业务需求调整每个波束的容量</li>
+          <li><strong>总功率守恒：</strong>卫星总功率不变，但波束间可重分配</li>
+          <li><strong>链路计算方法：</strong>
+            <ol>
+              <li>确定每个波束的带宽和功率分配</li>
+              <li>计算每条铰链链路的上行C/N</li>
+              <li>计算每条铰链链路的下行C/N</li>
+              <li>考虑DTP处理增益/损耗</li>
+              <li>合成总链路C/N</li>
+            </ol>
+          </li>
+        </ul>
+        <div class="info-box" style="margin-top:8px;">
+          <strong>📌 </strong>灵活载荷使链路计算更加复杂，但也使系统可以针对实际需求进行<strong>优化配置</strong>，提高资源利用效率。
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Slide 78: 方案对比 -->
+<div class="slide" data-section="卫星通信方案设计">
+  <div class="slide-header">
+    <span class="section-tag">PART 6 · 方案设计</span>
+    <h2>各方案对比总结</h2>
+  </div>
+  <div class="slide-content">
+    <table class="data-table" style="font-size:0.82em;">
+      <tr>
+        <th>特征</th><th>DTH广播</th><th>SCPC</th><th>VSAT星形</th><th>信关站</th><th>DTP/HTS</th>
+      </tr>
+      <tr>
+        <td><strong>天线口径</strong></td><td>0.35~0.6m</td><td>1.8~4.5m</td><td>0.6~2.4m</td><td>7~13m</td><td>0.6~1.2m(用户)</td>
+      </tr>
+      <tr>
+        <td><strong>频段</strong></td><td>Ku (BSS)</td><td>C/Ku</td><td>Ku/Ka</td><td>Ka/Q-V</td><td>Ka</td>
+      </tr>
+      <tr>
+        <td><strong>多址方式</strong></td><td>TDM(广播)</td><td>FDMA</td><td>TDM/TDMA</td><td>TDM/FDMA</td><td>TDM/TDMA</td>
+      </tr>
+      <tr>
+        <td><strong>链路瓶颈</strong></td><td>下行</td><td>上行/下行</td><td>返向上行</td><td>上行雨衰</td><td>用户返向</td>
+      </tr>
+      <tr>
+        <td><strong>典型速率</strong></td><td>30~100 Mbps</td><td>2~20 Mbps</td><td>50/2 Mbps</td><td>1~10 Gbps</td><td>100/10 Mbps</td>
+      </tr>
+      <tr>
+        <td><strong>终端成本</strong></td><td>低</td><td>中高</td><td>中</td><td>很高</td><td>中低</td>
+      </tr>
+      <tr>
+        <td><strong>典型应用</strong></td><td>电视直播</td><td>企业专线</td><td>企业网</td><td>核心节点</td><td>宽带接入</td>
+      </tr>
+    </table>
+    <div class="key-point" style="margin-top:12px;">
+      <strong>🔑 选择准则：</strong>广播/多播选DTH；固定速率点对点选SCPC；分散用户网络选VSAT；大容量汇聚选Gateway/HTS。链路计算方法相同，但参数配置差异很大。
+    </div>
+  </div>
+</div>
+
+<!-- Slide 79: HTS频率复用 -->
+<div class="slide" data-section="卫星通信方案设计">
+  <div class="slide-header">
+    <span class="section-tag">PART 6 · 方案设计</span>
+    <h2>HTS多波束频率复用设计</h2>
+  </div>
+  <div class="slide-content">
+    <div class="two-col">
+      <div>
+        <h3>四色频率复用方案</h3>
+        <p>HTS卫星典型采用4色频率复用：</p>
+        <ul>
+          <li>将可用频段分为2个子频段</li>
+          <li>每个子频段使用两种极化（L/R 或 H/V）</li>
+          <li>形成4种"颜色"的频率-极化组合</li>
+          <li>相邻波束使用不同颜色 → 避免同频干扰</li>
+        </ul>
+        <div class="formula" style="font-size:0.9em;">
+          C<sub>total</sub> = N<sub>beam</sub> × C<sub>per_beam</sub> / N<sub>color</sub>
+        </div>
+        <p>频率复用因子越高 → 总容量越大 → 但干扰越大</p>
+      </div>
+      <div>
+        <h3>同频干扰 C/I 计算</h3>
+        <p>同频波束间的载干比：</p>
+        <div class="formula" style="font-size:0.9em;">(C/I)<sub>co-channel</sub> = G<sub>sat</sub>(θ₀) − G<sub>sat</sub>(θ<sub>int</sub>)</div>
+        <p>θ<sub>int</sub> 为干扰波束方向与本波束中心的角度偏差</p>
+        <table class="data-table" style="font-size:0.88em;margin-top:8px;">
+          <tr><th>复用方案</th><th>复用因子</th><th>典型C/I(dB)</th><th>容量增益</th></tr>
+          <tr><td>4色</td><td>N/4</td><td>18~22</td><td>基准</td></tr>
+          <tr><td>3色</td><td>N/3</td><td>15~18</td><td>×1.33</td></tr>
+          <tr><td>全频复用</td><td>N</td><td>8~12</td><td>×4</td></tr>
+        </table>
+        <div class="info-box" style="margin-top:8px;">
+          <strong>📌 </strong>全频复用容量最大但干扰也最大，需要先进的波束成型和干扰消除技术。目前主流HTS仍以4色方案为主。
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Slide 80: Part 6小结 -->
+<div class="slide" data-section="卫星通信方案设计">
+  <div class="slide-header">
+    <span class="section-tag">PART 6 · 方案设计</span>
+    <h2>Part 6 小结</h2>
+  </div>
+  <div class="slide-content">
+    <div class="highlight-box">
+      <h3 style="border:none;padding:0;margin-bottom:10px;">📋 方案设计要点</h3>
+      <ul>
+        <li><strong>DTH：</strong>高EIRP + 小天线 + 单载波，覆盖区边缘设计是关键</li>
+        <li><strong>SCPC：</strong>多载波FDMA，注意功放回退和互调，功率-带宽均分</li>
+        <li><strong>VSAT星形：</strong>前向TDM（下行受限） + 返向TDMA（上行受限），不对称设计</li>
+        <li><strong>信关站：</strong>大天线高功率，HTS系统的核心节点，需站点分集抗雨衰</li>
+        <li><strong>DTP灵活载荷：</strong>波束间灵活路由和功率分配，链路计算需按实际配置</li>
+        <li>HTS系统采用<strong>多波束频率复用</strong>大幅提高总容量，但需管理同频干扰</li>
+      </ul>
+    </div>
+    <div class="info-box" style="margin-top:15px;">
+      <strong>🔜 接下来：</strong>Part 7 将介绍专业链路计算软件工具，包括国外商用软件和自研软件。
+    </div>
+  </div>
+</div>
+
+<!-- ========== Part 7: 链路评估软件介绍 ========== -->
+<!-- Slide 81: Part 7 标题页 -->
+<div class="slide section-slide" data-section="链路评估软件介绍">
+  <div class="part-number">PART 7</div>
+  <h1>链路评估软件介绍</h1>
+  <div class="section-divider"></div>
+  <div class="section-desc">Link Budget Software Tools<br>国外专业软件 · 自研软件 · 课程总结</div>
+</div>
+
+<!-- Slide 82: 国外软件概述 -->
+<div class="slide" data-section="链路评估软件介绍">
+  <div class="slide-header">
+    <span class="section-tag">PART 7 · 软件介绍</span>
+    <h2>国外专业链路计算软件</h2>
+  </div>
+  <div class="slide-content">
+    <table class="data-table">
+      <tr>
+        <th>软件名称</th><th>开发商</th><th>主要功能</th><th>特点</th>
+      </tr>
+      <tr>
+        <td><strong>SatMaster Pro</strong></td>
+        <td>Arrowe Technical Services</td>
+        <td>链路预算、干扰分析、降雨衰减</td>
+        <td>业界广泛使用，功能全面</td>
+      </tr>
+      <tr>
+        <td><strong>LinkBudget</strong></td>
+        <td>ViaSat</td>
+        <td>综合链路计算、系统仿真</td>
+        <td>HTS系统专业工具</td>
+      </tr>
+      <tr>
+        <td><strong>STK</strong><br>(Systems Tool Kit)</td>
+        <td>AGI/Ansys</td>
+        <td>轨道分析、覆盖仿真、链路计算</td>
+        <td>最强大的航天仿真平台</td>
+      </tr>
+      <tr>
+        <td><strong>Carrier Budget</strong></td>
+        <td>SES/Intelsat</td>
+        <td>运营商内部链路计算工具</td>
+        <td>集成卫星实测参数</td>
+      </tr>
+      <tr>
+        <td><strong>SatCalc</strong></td>
+        <td>JSAT</td>
+        <td>链路预算、频率规划</td>
+        <td>亚太地区常用</td>
+      </tr>
+    </table>
+    <div class="info-box" style="margin-top:12px;">
+      <strong>📌 行业现状：</strong>国外软件功能强大但价格昂贵（数万至数十万美元），且部分软件对中国用户存在出口管制限制。这促使国内卫星运营商和科研机构开发自主可控的链路计算工具。
+    </div>
+  </div>
+</div>
+
+<!-- Slide 83: 各软件功能对比 -->
+<div class="slide" data-section="链路评估软件介绍">
+  <div class="slide-header">
+    <span class="section-tag">PART 7 · 软件介绍</span>
+    <h2>软件功能对比</h2>
+  </div>
+  <div class="slide-content">
+    <table class="data-table" style="font-size:0.85em;">
+      <tr>
+        <th>功能</th><th>SatMaster</th><th>STK</th><th>LinkBudget</th><th>Carrier Budget</th>
+      </tr>
+      <tr><td>基本链路预算</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td></tr>
+      <tr><td>ITU-R降雨模型</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td></tr>
+      <tr><td>邻星干扰分析</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td></tr>
+      <tr><td>多波束HTS分析</td><td>部分</td><td>✅</td><td>✅</td><td>部分</td></tr>
+      <tr><td>轨道仿真</td><td>❌</td><td>✅</td><td>❌</td><td>❌</td></tr>
+      <tr><td>3D可视化</td><td>❌</td><td>✅</td><td>❌</td><td>❌</td></tr>
+      <tr><td>DVB-S2/S2X MODCOD</td><td>✅</td><td>部分</td><td>✅</td><td>✅</td></tr>
+      <tr><td>ACM仿真</td><td>部分</td><td>❌</td><td>✅</td><td>部分</td></tr>
+      <tr><td>批量计算</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td></tr>
+      <tr><td>报告生成</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td></tr>
+      <tr><td>价格</td><td>中</td><td>很高</td><td>高</td><td>内部</td></tr>
+    </table>
+    <div class="warning-box" style="margin-top:8px;">
+      <strong>⚠️ 注意：</strong>任何软件工具都只是辅助手段。理解链路计算的<strong>基本原理和方法</strong>才是核心能力。软件结果需要工程师的<strong>专业判断</strong>来验证。
+    </div>
+  </div>
+</div>
+
+<!-- Slide 84: STK详细介绍 -->
+<div class="slide" data-section="链路评估软件介绍">
+  <div class="slide-header">
+    <span class="section-tag">PART 7 · 软件介绍</span>
+    <h2>STK (Systems Tool Kit) 简介</h2>
+  </div>
+  <div class="slide-content">
+    <div class="two-col">
+      <div>
+        <h3>STK核心能力</h3>
+        <ul>
+          <li><strong>轨道计算：</strong>精确的轨道传播和预测</li>
+          <li><strong>覆盖分析：</strong>覆盖区域计算和可视化</li>
+          <li><strong>通信链路：</strong>综合链路预算分析</li>
+          <li><strong>干扰分析：</strong>多系统间干扰评估</li>
+          <li><strong>场景仿真：</strong>时间序列动态分析</li>
+          <li><strong>3D可视化：</strong>直观展示系统运行状态</li>
+        </ul>
+        <h3>STK通信模块</h3>
+        <ul>
+          <li>STK Communications (CommSystems)</li>
+          <li>支持复杂多跳链路</li>
+          <li>支持GEO/MEO/LEO多轨道</li>
+          <li>集成ITU-R传播模型</li>
+        </ul>
+      </div>
+      <div>
+        <h3>STK在卫星通信中的应用</h3>
+        <ul>
+          <li><strong>星座设计：</strong>LEO/MEO星座优化</li>
+          <li><strong>频率协调：</strong>与ITU频率协调相关的干扰分析</li>
+          <li><strong>系统论证：</strong>卫星通信系统方案论证</li>
+          <li><strong>覆盖评估：</strong>不同轨位的覆盖效果对比</li>
+        </ul>
+        <div class="info-box" style="margin-top:10px;">
+          <strong>📌 对于GEO卫星链路计算：</strong>STK虽然功能最强大，但对于日常的GEO链路预算来说可能过于复杂。SatMaster或自研工具更适合日常使用。STK更适合系统级论证和星座设计。
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Slide 85: 自研软件背景 -->
+<div class="slide" data-section="链路评估软件介绍">
+  <div class="slide-header">
+    <span class="section-tag">PART 7 · 软件介绍</span>
+    <h2>自研卫星链路计算软件</h2>
+  </div>
+  <div class="slide-content">
+    <div class="two-col">
+      <div>
+        <h3>开发背景与需求</h3>
+        <ul>
+          <li><strong>自主可控：</strong>减少对国外软件的依赖</li>
+          <li><strong>定制化：</strong>针对中国卫通卫星参数优化</li>
+          <li><strong>成本优势：</strong>无需高昂的许可费用</li>
+          <li><strong>快速迭代：</strong>可根据业务需求快速升级</li>
+          <li><strong>安全保密：</strong>敏感卫星参数不外泄</li>
+        </ul>
+        <h3>软件架构设计</h3>
+        <div class="diagram-flow" style="margin:10px 0;">
+          <div class="box">用户界面<br>GUI/Web</div><span class="arrow">→</span>
+          <div class="box highlight">计算引擎<br>Core Engine</div><span class="arrow">→</span>
+          <div class="box alt">数据库<br>卫星/ITU参数</div>
+        </div>
+        <ul>
+          <li>前端：Web/桌面应用</li>
+          <li>后端：Python/C++计算引擎</li>
+          <li>数据库：卫星参数、ITU降雨数据、MODCOD表</li>
+        </ul>
+      </div>
+      <div>
+        <h3>核心功能模块</h3>
+        <ol>
+          <li><strong>几何计算模块：</strong>仰角、方位角、斜距</li>
+          <li><strong>链路预算模块：</strong>上行/下行/总C/N</li>
+          <li><strong>大气传播模块：</strong>ITU-R P.618/P.676/P.838</li>
+          <li><strong>干扰分析模块：</strong>ASI/XPI/IM计算</li>
+          <li><strong>方案设计模块：</strong>MODCOD选择、容量规划</li>
+          <li><strong>批量计算模块：</strong>覆盖区多点计算</li>
+          <li><strong>可视化模块：</strong>覆盖图、EIRP分布</li>
+          <li><strong>报告生成模块：</strong>自动生成链路预算报告</li>
+        </ol>
+        <h3>与国外软件对比优势</h3>
+        <ul>
+          <li>✅ 中文界面，操作习惯符合国内工程师</li>
+          <li>✅ 集成中国卫通卫星实测参数</li>
+          <li>✅ 中国降雨数据更精确（国内实测数据）</li>
+          <li>✅ 自主可控，无出口限制</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Slide 86: 软件功能展示 -->
+<div class="slide" data-section="链路评估软件介绍">
+  <div class="slide-header">
+    <span class="section-tag">PART 7 · 软件介绍</span>
+    <h2>自研软件核心功能展示</h2>
+  </div>
+  <div class="slide-content">
+    <div class="three-col">
+      <div>
+        <div class="diagram-box" style="background:var(--primary);color:white;margin-bottom:10px;">📊 链路预算计算</div>
+        <ul style="font-size:0.88em;">
+          <li>支持C/Ku/Ka/Q-V全频段</li>
+          <li>晴天+雨天链路一键计算</li>
+          <li>DVB-S2/S2X全MODCOD</li>
+          <li>上行/下行/总C/N自动合成</li>
+          <li>余量自动判定</li>
+        </ul>
+      </div>
+      <div>
+        <div class="diagram-box" style="background:var(--accent2);color:white;margin-bottom:10px;">🌍 覆盖分析</div>
+        <ul style="font-size:0.88em;">
+          <li>中国及周边地区覆盖图</li>
+          <li>EIRP/G/T等值线分布</li>
+          <li>多波束覆盖叠加显示</li>
+          <li>可用度等值线图</li>
+          <li>降雨衰减分布图</li>
+        </ul>
+      </div>
+      <div>
+        <div class="diagram-box" style="background:#e65100;color:white;margin-bottom:10px;">📝 报告生成</div>
+        <ul style="font-size:0.88em;">
+          <li>链路预算表自动生成</li>
+          <li>Excel/PDF报告导出</li>
+          <li>参数灵敏度分析图表</li>
+          <li>多方案对比报告</li>
+          <li>ITU协调文件辅助生成</li>
+        </ul>
+      </div>
+    </div>
+    <div class="info-box" style="margin-top:15px;">
+      <strong>💡 软件定位：</strong>面向卫星通信工程师的日常链路计算工作，兼顾便捷性和专业性。同时也可作为教学工具，帮助学生理解链路计算的全过程。
+    </div>
+  </div>
+</div>
+
+<!-- Slide 87: 计算引擎验证 -->
+<div class="slide" data-section="链路评估软件介绍">
+  <div class="slide-header">
+    <span class="section-tag">PART 7 · 软件介绍</span>
+    <h2>计算引擎验证与精度</h2>
+  </div>
+  <div class="slide-content">
+    <h3>与SatMaster Pro的对比验证</h3>
+    <table class="data-table">
+      <tr>
+        <th>计算项目</th><th>SatMaster Pro</th><th>自研软件</th><th>差异 (dB)</th>
+      </tr>
+      <tr><td>FSL (Ku, 14.25 GHz)</td><td>206.97</td><td>206.95</td><td>0.02</td></tr>
+      <tr><td>天线增益 (2.4m, Ku)</td><td>46.58</td><td>46.61</td><td>0.03</td></tr>
+      <tr><td>晴天 (C/N)<sub>up</sub></td><td>6.22</td><td>6.19</td><td>0.03</td></tr>
+      <tr><td>晴天 (C/N)<sub>dn</sub></td><td>19.18</td><td>19.15</td><td>0.03</td></tr>
+      <tr><td>总 (C/N)<sub>total</sub></td><td>5.93</td><td>5.91</td><td>0.02</td></tr>
+      <tr><td>降雨衰减 (0.01%, Ku)</td><td>7.25</td><td>7.20</td><td>0.05</td></tr>
+      <tr><td>雨天 (C/N)<sub>total</sub></td><td>2.54</td><td>2.51</td><td>0.03</td></tr>
+    </table>
+    <div class="highlight-box" style="margin-top:12px;">
+      <strong>✅ 验证结论：</strong>与国际主流软件SatMaster Pro相比，自研软件的计算精度优于 <strong>±0.05 dB</strong>，完全满足工程应用要求（工程精度通常要求 ±0.1 dB）。差异主要来源于ITU-R参数的插值方法差异。
+    </div>
+  </div>
+</div>
+
+<!-- Slide 88: 课程总结 -->
+<div class="slide" data-section="链路评估软件介绍">
+  <div class="slide-header">
+    <span class="section-tag">PART 7 · 总结</span>
+    <h2>课程总结</h2>
+  </div>
+  <div class="slide-content">
+    <h3>🎯 链路计算核心要点回顾</h3>
+    <div class="two-col">
+      <div>
+        <div class="highlight-box">
+          <strong>基础概念</strong>
+          <ul>
+            <li>EIRP = P<sub>t</sub> + G<sub>t</sub> − L<sub>feed</sub></li>
+            <li>G/T = G<sub>r</sub> − 10log(T<sub>sys</sub>)</li>
+            <li>G = η(πD/λ)²</li>
+            <li>N = kTB → −228.6 + 10logT + 10logB</li>
+          </ul>
+        </div>
+        <div class="highlight-box" style="margin-top:8px;">
+          <strong>链路计算</strong>
+          <ul>
+            <li>FSL = 92.45 + 20log(f) + 20log(d)</li>
+            <li>C/N = EIRP + G/T + 228.6 − 10logB − FSL − L</li>
+            <li>1/(C/N)<sub>T</sub> = Σ1/(C/N)<sub>i</sub> + Σ1/(C/I)<sub>j</sub></li>
+            <li>Margin = (C/N)<sub>actual</sub> − (C/N)<sub>req</sub> ≥ 0</li>
+          </ul>
+        </div>
+      </div>
+      <div>
+        <div class="highlight-box">
+          <strong>降雨衰减</strong>
+          <ul>
+            <li>A = γ<sub>R</sub> × L<sub>eff</sub> (ITU-R P.618)</li>
+            <li>降雨同时衰减信号+增加噪声</li>
+            <li>UPC/ACM/站点分集是关键对策</li>
+          </ul>
+        </div>
+        <div class="highlight-box" style="margin-top:8px;">
+          <strong>方案设计</strong>
+          <ul>
+            <li>DTH: 高EIRP+小天线+广播</li>
+            <li>VSAT: 前向TDM+返向TDMA</li>
+            <li>HTS: 多波束频率复用+DTP灵活载荷</li>
+            <li>根据业务需求选择最优方案</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Slide 89: 关键数据速查 -->
+<div class="slide" data-section="链路评估软件介绍">
+  <div class="slide-header">
+    <span class="section-tag">PART 7 · 总结</span>
+    <h2>关键数据速查表</h2>
+  </div>
+  <div class="slide-content">
+    <div class="two-col">
+      <div>
+        <h3>常用常数</h3>
+        <table class="data-table" style="font-size:0.88em;">
+          <tr><th>常数</th><th>值</th></tr>
+          <tr><td>光速 c</td><td>2.998 × 10⁸ m/s</td></tr>
+          <tr><td>玻尔兹曼常数 k</td><td>−228.6 dBW/K/Hz</td></tr>
+          <tr><td>地球半径 R<sub>e</sub></td><td>6,371 km</td></tr>
+          <tr><td>GEO轨道半径</td><td>42,164 km</td></tr>
+          <tr><td>GEO高度</td><td>35,786 km</td></tr>
+          <tr><td>标准温度 T₀</td><td>290 K</td></tr>
+        </table>
+        <h3 style="margin-top:10px;">速记规则</h3>
+        <ul style="font-size:0.9em;">
+          <li>×2 → +3 dB; ×10 → +10 dB</li>
+          <li>口径×2 → 增益+6 dB</li>
+          <li>频率×2 → FSL+6 dB, G+6 dB</li>
+          <li>距离×2 → FSL+6 dB</li>
+        </ul>
+      </div>
+      <div>
+        <h3>DVB-S2常用MODCOD门限</h3>
+        <table class="data-table" style="font-size:0.82em;">
+          <tr><th>MODCOD</th><th>η (bit/s/Hz)</th><th>E<sub>s</sub>/N<sub>0</sub> (dB)</th></tr>
+          <tr><td>QPSK 1/4</td><td>0.49</td><td>−2.35</td></tr>
+          <tr><td>QPSK 1/3</td><td>0.66</td><td>−1.24</td></tr>
+          <tr><td>QPSK 1/2</td><td>0.99</td><td>1.00</td></tr>
+          <tr><td>QPSK 2/3</td><td>1.32</td><td>2.23</td></tr>
+          <tr><td>QPSK 3/4</td><td>1.49</td><td>3.10</td></tr>
+          <tr><td>QPSK 5/6</td><td>1.65</td><td>3.60</td></tr>
+          <tr><td>8PSK 2/3</td><td>1.98</td><td>5.18</td></tr>
+          <tr><td>8PSK 3/4</td><td>2.23</td><td>6.20</td></tr>
+          <tr><td>16APSK 2/3</td><td>2.64</td><td>7.80</td></tr>
+          <tr><td>16APSK 3/4</td><td>2.97</td><td>8.97</td></tr>
+          <tr><td>32APSK 3/4</td><td>3.70</td><td>11.60</td></tr>
+          <tr><td>32APSK 4/5</td><td>3.95</td><td>12.73</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Slide 90: 学习建议 -->
+<div class="slide" data-section="链路评估软件介绍">
+  <div class="slide-header">
+    <span class="section-tag">PART 7 · 总结</span>
+    <h2>学习建议与参考资料</h2>
+  </div>
+  <div class="slide-content">
+    <div class="two-col">
+      <div>
+        <h3>📚 推荐参考书籍</h3>
+        <ol>
+          <li><strong>《卫星通信》</strong>（第4版）— Timothy Pratt, Charles Bostian<br>
+            <span style="color:#666;">经典教材，涵盖链路计算全过程</span></li>
+          <li><strong>《Satellite Communications Systems》</strong> — G. Maral, M. Bousquet<br>
+            <span style="color:#666;">欧洲经典教材，偏重系统设计</span></li>
+          <li><strong>《Digital Satellite Communications》</strong> — Tri T. Ha<br>
+            <span style="color:#666;">侧重数字卫星通信技术</span></li>
+          <li><strong>《卫星通信系统工程》</strong> — 中国卫星通信相关教材<br>
+            <span style="color:#666;">国内教材，中文讲解</span></li>
+        </ol>
+        <h3>📋 推荐ITU-R建议书</h3>
+        <ul>
+          <li>ITU-R P.618: 地-空传播预测</li>
+          <li>ITU-R P.676: 气体衰减</li>
+          <li>ITU-R P.837: 降雨统计</li>
+          <li>ITU-R P.838: 降雨比衰减</li>
+          <li>ITU-R S.580: 天线旁瓣</li>
+        </ul>
+      </div>
+      <div>
+        <h3>💡 学习建议</h3>
+        <ol class="step-list">
+          <li><strong>打好理论基础：</strong>电磁波传播、通信原理、信号处理</li>
+          <li><strong>多做计算练习：</strong>手算完整链路预算至少5遍</li>
+          <li><strong>理解物理意义：</strong>每个参数和公式背后的物理含义</li>
+          <li><strong>关注实际系统：</strong>了解实际卫星系统的参数和设计</li>
+          <li><strong>使用工具验证：</strong>用软件验证手算结果，建立工程直觉</li>
+          <li><strong>跟踪技术发展：</strong>HTS、LEO星座、灵活载荷等新技术</li>
+        </ol>
+        <div class="info-box" style="margin-top:10px;">
+          <strong>🌐 在线资源：</strong>ITU-R网站（itu.int）、DVB标准（dvb.org）、卫星行业媒体（SatMagazine, SpaceNews）
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Slide 91: Q&A -->
+<div class="slide section-slide" data-section="链路评估软件介绍">
+  <div class="part-number">Q &amp; A</div>
+  <h1>问题与讨论</h1>
+  <div class="section-divider"></div>
+  <div class="section-desc">感谢各位同学的聆听！<br>欢迎提问和交流</div>
+</div>
+
+<!-- Slide 92: 附录-公式汇总 -->
+<div class="slide" data-section="附录">
+  <div class="slide-header">
+    <span class="section-tag">附录</span>
+    <h2>附录A — 核心公式完整汇总</h2>
+  </div>
+  <div class="slide-content">
+    <div class="two-col">
+      <div>
+        <h3>几何与传播</h3>
+        <div class="formula" style="font-size:0.85em;">cosψ = cos(φ)·cos(Δλ)</div>
+        <div class="formula" style="font-size:0.85em;">El = arctan[(cosψ − r/R) / √(1 − cos²ψ)]</div>
+        <div class="formula" style="font-size:0.85em;">d = √(R² + r² − 2Rr·cosψ)</div>
+        <div class="formula" style="font-size:0.85em;">FSL = 92.45 + 20log₁₀(f[GHz]) + 20log₁₀(d[km])</div>
+        <h3>天线与噪声</h3>
+        <div class="formula" style="font-size:0.85em;">G = η(πDf/c)² → 17.8 + 20logD + 20logf + 10logη</div>
+        <div class="formula" style="font-size:0.85em;">θ<sub>−3dB</sub> ≈ 21 / (f[GHz] × D[m]) [度]</div>
+        <div class="formula" style="font-size:0.85em;">T<sub>sys</sub> = T<sub>ant</sub>/L + T₀(1−1/L) + T<sub>LNA</sub> + T<sub>2</sub>/G<sub>LNA</sub></div>
+        <div class="formula" style="font-size:0.85em;">EIRP = P<sub>t</sub> + G<sub>t</sub> − L<sub>feed</sub></div>
+        <div class="formula" style="font-size:0.85em;">G/T = G<sub>r</sub> − 10log₁₀(T<sub>sys</sub>)</div>
+      </div>
+      <div>
+        <h3>链路计算</h3>
+        <div class="formula" style="font-size:0.85em;">(C/N) = EIRP + G/T + 228.6 − 10logB − FSL − L<sub>other</sub></div>
+        <div class="formula" style="font-size:0.85em;">1/(C/N)<sub>T</sub> = 1/(C/N)<sub>up</sub> + 1/(C/N)<sub>dn</sub> + Σ1/(C/I)</div>
+        <div class="formula" style="font-size:0.85em;">E<sub>b</sub>/N<sub>0</sub> = C/N + 10log₁₀(B/R<sub>b</sub>)</div>
+        <div class="formula" style="font-size:0.85em;">R<sub>b</sub> = R<sub>s</sub> × log₂(M) × R<sub>code</sub></div>
+        <div class="formula" style="font-size:0.85em;">R<sub>s</sub> = B<sub>occ</sub> / (1 + α)</div>
+        <h3>降雨衰减</h3>
+        <div class="formula" style="font-size:0.85em;">γ<sub>R</sub> = k × R<sup>α</sup> [dB/km]</div>
+        <div class="formula" style="font-size:0.85em;">L<sub>S</sub> = (h<sub>R</sub> − h<sub>S</sub>) / sin(El)</div>
+        <div class="formula" style="font-size:0.85em;">A<sub>0.01</sub> = γ<sub>R</sub> × L<sub>S</sub> × r<sub>0.01</sub></div>
+        <div class="formula" style="font-size:0.85em;">T<sub>rain</sub> = T<sub>m</sub> × (1 − 1/A<sub>rain</sub>)</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Slide 93: 附录-缩写表 -->
+<div class="slide" data-section="附录">
+  <div class="slide-header">
+    <span class="section-tag">附录</span>
+    <h2>附录B — 常用缩写对照表</h2>
+  </div>
+  <div class="slide-content">
+    <div class="three-col">
+      <div>
+        <table class="data-table" style="font-size:0.78em;">
+          <tr><th>缩写</th><th>全称</th></tr>
+          <tr><td>ACM</td><td>Adaptive Coding &amp; Modulation</td></tr>
+          <tr><td>ASI</td><td>Adjacent Satellite Interference</td></tr>
+          <tr><td>BER</td><td>Bit Error Rate</td></tr>
+          <tr><td>BSS</td><td>Broadcasting Satellite Service</td></tr>
+          <tr><td>C/I</td><td>Carrier-to-Interference Ratio</td></tr>
+          <tr><td>C/N</td><td>Carrier-to-Noise Ratio</td></tr>
+          <tr><td>DTH</td><td>Direct-To-Home</td></tr>
+          <tr><td>DTP</td><td>Digital Transparent Processor</td></tr>
+          <tr><td>DVB</td><td>Digital Video Broadcasting</td></tr>
+          <tr><td>EIRP</td><td>Equiv. Isotropic Radiated Power</td></tr>
+          <tr><td>FEC</td><td>Forward Error Correction</td></tr>
+        </table>
+      </div>
+      <div>
+        <table class="data-table" style="font-size:0.78em;">
+          <tr><th>缩写</th><th>全称</th></tr>
+          <tr><td>FDMA</td><td>Frequency Div. Multiple Access</td></tr>
+          <tr><td>FSL</td><td>Free Space Loss</td></tr>
+          <tr><td>G/T</td><td>Gain-to-Noise Temperature</td></tr>
+          <tr><td>GEO</td><td>Geostationary Earth Orbit</td></tr>
+          <tr><td>HPA</td><td>High Power Amplifier</td></tr>
+          <tr><td>HPBW</td><td>Half-Power Beamwidth</td></tr>
+          <tr><td>HTS</td><td>High Throughput Satellite</td></tr>
+          <tr><td>IBO</td><td>Input Back-Off</td></tr>
+          <tr><td>IM</td><td>Intermodulation</td></tr>
+          <tr><td>LDPC</td><td>Low-Density Parity-Check</td></tr>
+          <tr><td>LEO</td><td>Low Earth Orbit</td></tr>
+        </table>
+      </div>
+      <div>
+        <table class="data-table" style="font-size:0.78em;">
+          <tr><th>缩写</th><th>全称</th></tr>
+          <tr><td>LNA</td><td>Low Noise Amplifier</td></tr>
+          <tr><td>LNB</td><td>Low Noise Block Downconv.</td></tr>
+          <tr><td>MEO</td><td>Medium Earth Orbit</td></tr>
+          <tr><td>MODCOD</td><td>Modulation &amp; Coding</td></tr>
+          <tr><td>NF</td><td>Noise Figure</td></tr>
+          <tr><td>OBO</td><td>Output Back-Off</td></tr>
+          <tr><td>PFD</td><td>Power Flux Density</td></tr>
+          <tr><td>SCPC</td><td>Single Channel Per Carrier</td></tr>
+          <tr><td>TDMA</td><td>Time Div. Multiple Access</td></tr>
+          <tr><td>UPC</td><td>Uplink Power Control</td></tr>
+          <tr><td>VSAT</td><td>Very Small Aperture Terminal</td></tr>
+          <tr><td>XPD</td><td>Cross-Polar Discrimination</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Slide 94: 结束页 -->
+<div class="slide title-slide" data-section="结束">
+  <h1>谢谢！</h1>
+  <div class="divider"></div>
+  <h2>地球静止轨道卫星通信链路计算</h2>
+  <h3>原理、方法与软件应用</h3>
+  <div class="logo-area" style="margin-top:40px;">
+    <p style="font-size:1.1em;">中国卫通集团股份有限公司</p>
+    <p style="margin-top:5px;">China Satellite Communications Group Co., Ltd.</p>
+    <p style="margin-top:15px;opacity:0.6;">北京邮电大学 专题讲座</p>
+  </div>
+</div>
+
+</div><!-- end #presentation -->
+
+<!-- 提纲面板 -->
+<div id="outline-panel">
+  <button id="outline-close">&times;</button>
+  <h3>📑 课程提纲</h3>
+  <div id="outline-content"></div>
+</div>
+
+<!-- 控件 -->
+<button id="outline-toggle">☰</button>
+<div id="nav-controls">
+  <button id="btn-prev" title="上一页 (←)">◀</button>
+  <button id="btn-next" title="下一页 (→)">▶</button>
+</div>
+<div id="slide-counter"></div>
+<div id="progress-bar"></div>
+
+<script>
+(function() {
+  'use strict';
+  const slides = document.querySelectorAll('.slide');
+  const total = slides.length;
+  let current = 0;
+
+  const counter = document.getElementById('slide-counter');
+  const progress = document.getElementById('progress-bar');
+  const outlinePanel = document.getElementById('outline-panel');
+  const outlineContent = document.getElementById('outline-content');
+  const outlineToggle = document.getElementById('outline-toggle');
+  const outlineClose = document.getElementById('outline-close');
+  const btnPrev = document.getElementById('btn-prev');
+  const btnNext = document.getElementById('btn-next');
+
+  // Build outline
+  function buildOutline() {
+    let lastSection = '';
+    let html = '';
+    slides.forEach(function(slide, i) {
+      const section = slide.getAttribute('data-section') || '';
+      if (section && section !== lastSection) {
+        html += '<div class="outline-item section" data-idx="' + i + '">' + section + '</div>';
+        lastSection = section;
+      }
+      let title = '';
+      const h2 = slide.querySelector('.slide-header h2');
+      const h1 = slide.querySelector('h1');
+      if (h2) title = h2.textContent;
+      else if (h1) title = h1.textContent.replace(/\n/g, ' ').substring(0, 40);
+      else title = '幻灯片 ' + (i + 1);
+      html += '<div class="outline-item" data-idx="' + i + '">&nbsp;&nbsp;' + (i + 1) + '. ' + title + '</div>';
+    });
+    outlineContent.innerHTML = html;
+    outlineContent.querySelectorAll('.outline-item').forEach(function(item) {
+      item.addEventListener('click', function() {
+        goTo(parseInt(this.getAttribute('data-idx')));
+        outlinePanel.classList.remove('open');
+      });
+    });
+  }
+
+  function updateOutline() {
+    outlineContent.querySelectorAll('.outline-item').forEach(function(item) {
+      item.classList.toggle('current', parseInt(item.getAttribute('data-idx')) === current);
+    });
+  }
+
+  function goTo(n) {
+    if (n < 0 || n >= total || n === current) return;
+    slides[current].classList.remove('active');
+    slides[current].classList.add(n > current ? 'prev' : '');
+    current = n;
+    slides[current].classList.remove('prev');
+    slides[current].classList.add('active');
+    update();
+  }
+
+  function next() { goTo(current + 1); }
+  function prev() { goTo(current - 1); }
+
+  function update() {
+    counter.textContent = (current + 1) + ' / ' + total;
+    progress.style.width = ((current + 1) / total * 100) + '%';
+    updateOutline();
+    // Reset scroll
+    const content = slides[current].querySelector('.slide-content');
+    if (content) content.scrollTop = 0;
+  }
+
+  // Initialize
+  slides.forEach(function(s) { s.classList.remove('active', 'prev'); });
+  slides[0].classList.add('active');
+  buildOutline();
+  update();
+
+  // Keyboard nav
+  document.addEventListener('keydown', function(e) {
+    if (outlinePanel.classList.contains('open')) {
+      if (e.key === 'Escape') outlinePanel.classList.remove('open');
+      return;
+    }
+    switch(e.key) {
+      case 'ArrowRight': case 'ArrowDown': case ' ': case 'PageDown':
+        e.preventDefault(); next(); break;
+      case 'ArrowLeft': case 'ArrowUp': case 'PageUp':
+        e.preventDefault(); prev(); break;
+      case 'Home': e.preventDefault(); goTo(0); break;
+      case 'End': e.preventDefault(); goTo(total - 1); break;
+      case 'Escape': break;
+    }
+  });
+
+  // Buttons
+  btnNext.addEventListener('click', next);
+  btnPrev.addEventListener('click', prev);
+  outlineToggle.addEventListener('click', function() { outlinePanel.classList.toggle('open'); });
+  outlineClose.addEventListener('click', function() { outlinePanel.classList.remove('open'); });
+
+  // Touch swipe
+  let touchStartX = 0;
+  document.addEventListener('touchstart', function(e) { touchStartX = e.changedTouches[0].screenX; });
+  document.addEventListener('touchend', function(e) {
+    const diff = touchStartX - e.changedTouches[0].screenX;
+    if (Math.abs(diff) > 50) { diff > 0 ? next() : prev(); }
+  });
+
+  // Click outside outline to close
+  document.addEventListener('click', function(e) {
+    if (outlinePanel.classList.contains('open') && !outlinePanel.contains(e.target) && e.target !== outlineToggle) {
+      outlinePanel.classList.remove('open');
+    }
+  });
+})();
+</script>
+</body>
+</html>
